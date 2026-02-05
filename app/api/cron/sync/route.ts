@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { decrypt } from '@/lib/utils/encryption'
+import { encrypt, decrypt } from '@/lib/utils/encryption'
 import { google } from 'googleapis'
 
 export async function GET(req: NextRequest) {
