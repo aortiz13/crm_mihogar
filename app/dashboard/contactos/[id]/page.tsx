@@ -1,0 +1,43 @@
+import { getContact, getContactNotes } from '@/lib/actions/contacts'
+import { getCommunities } from '@/lib/actions/communities'
+import { ContactDetail } from '@/components/contacts/contact-detail'
+import { notFound } from 'next/navigation'
+import { Button } from '@/components/ui/button'
+import { ArrowLeft } from 'lucide-react'
+import Link from 'next/link'
+
+export const dynamic = 'force-dynamic'
+
+interface PageProps {
+    params: Promise<{ id: string }>
+}
+
+export default async function ContactDetailPage(props: PageProps) {
+    const params = await props.params;
+    const contact = await getContact(params.id)
+    const notes = await getContactNotes(params.id)
+    const communities = await getCommunities() // Needed for dropdown
+
+    if (!contact) {
+        notFound()
+    }
+
+    return (
+        <div className="flex h-full flex-col space-y-4 p-8 pt-6">
+            <div className="flex items-center space-x-4 mb-4">
+                <Button variant="ghost" size="icon" asChild>
+                    <Link href="/dashboard/contactos">
+                        <ArrowLeft className="h-4 w-4" />
+                    </Link>
+                </Button>
+                <h2 className="text-2xl font-bold tracking-tight">Detalles del Contacto</h2>
+            </div>
+
+            <ContactDetail
+                contact={contact}
+                notes={notes}
+                communities={communities}
+            />
+        </div>
+    )
+}
