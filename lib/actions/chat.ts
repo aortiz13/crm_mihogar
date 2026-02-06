@@ -2,6 +2,7 @@
 
 import { searchCommunityContext } from '@/lib/ai/rag'
 import { getGemini, CHAT_MODEL } from '@/lib/gemini'
+import { SchemaType } from '@google/generative-ai'
 import { createActivity } from './activities'
 import { getResidentBill } from './finance'
 
@@ -39,11 +40,11 @@ export async function chatWithCommunity(communityId: string, messages: any[]) {
                         name: "get_resident_bill_details",
                         description: "Obtiene el desglose detallado de la boleta de un residente para un mes específico.",
                         parameters: {
-                            type: "OBJECT",
+                            type: SchemaType.OBJECT,
                             properties: {
-                                resident_email: { type: "STRING", description: "Email registrado del residente" },
-                                month: { type: "NUMBER", description: "Mes de la boleta (1-12)" },
-                                year: { type: "NUMBER", description: "Año de la boleta (ej: 2025)" }
+                                resident_email: { type: SchemaType.STRING, description: "Email registrado del residente" },
+                                month: { type: SchemaType.NUMBER, description: "Mes de la boleta (1-12)" },
+                                year: { type: SchemaType.NUMBER, description: "Año de la boleta (ej: 2025)" }
                             },
                             required: ["resident_email", "month", "year"]
                         }
