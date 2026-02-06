@@ -1,10 +1,6 @@
 'use server'
 
-import { searchCommunityContext } from '@/lib/ai/rag'
-import { getGemini, CHAT_MODEL } from '@/lib/gemini'
-import { SchemaType } from '@google/generative-ai'
-import { createActivity } from './activities'
-import { getResidentBill, getBillByUnit } from './finance'
+import { createClient } from '@/lib/supabase/server'
 
 export async function chatWithCommunity(communityId: string, messages: any[]) {
     try {
