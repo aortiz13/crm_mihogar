@@ -2,6 +2,7 @@ import { getCommunities, createCommunity } from '@/lib/actions/communities'
 import Link from 'next/link'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { CreateCommunityDialog } from '@/components/communities/create-community-dialog'
+import { ImportCommunitiesDialog } from '@/components/communities/import-communities-dialog'
 import { Building, MapPin, Users } from 'lucide-react'
 
 export default async function CommunitiesPage() {
@@ -14,7 +15,10 @@ export default async function CommunitiesPage() {
                     <h1 className="text-3xl font-bold tracking-tight">Comunidades</h1>
                     <p className="text-muted-foreground">Gestione los edificios y propiedades.</p>
                 </div>
-                <CreateCommunityDialog />
+                <div className="flex gap-2">
+                    <ImportCommunitiesDialog />
+                    <CreateCommunityDialog />
+                </div>
             </div>
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">

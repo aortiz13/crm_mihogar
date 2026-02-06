@@ -21,6 +21,10 @@ export interface Community {
     gmail_access_token?: string | null
     latitude?: number | null
     longitude?: number | null
+    city?: string | null
+    admin_email_contact?: string | null
+    geo_status?: 'pending' | 'completed' | 'error' | null
+    display_name?: string | null
 }
 
 export interface Activity {

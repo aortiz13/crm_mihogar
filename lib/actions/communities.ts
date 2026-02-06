@@ -131,3 +131,94 @@ export async function updateCommunityEmailSettings(id: string, settings: any) {
     revalidatePath(`/dashboard/communities/${id}/settings`)
     return { success: true }
 }
+
+async function geocodeAddress(address: string, city: string) {
+    try {
+        const query = encodeURIComponent(`${address}, ${city}`)
+        const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${query}&limit=1`, {
+            headers: {
+                'User-Agent': 'MiHogarCRM/1.0'
+            }
+        })
+        const data = await response.json()
+        if (data && data.length > 0) {
+            return {
+                latitude: parseFloat(data[0].lat),
+                longitude: parseFloat(data[0].lon),
+                display_name: data[0].display_name,
+                geo_status: 'completed' as const
+            }
+        }
+        return { geo_status: 'pending' as const }
+    } catch (error) {
+        console.error('Geocoding error:', error)
+        return { geo_status: 'error' as const }
+    }
+}
+
+export async function bulkImportCommunities(
+    data: any[],
+    mapping: Record<string, string>,
+    options: { updateIfExists: boolean }
+) {
+    const supabase = await createClient()
+    const results = { imported: 0, skipped: 0, errors: 0 }
+
+    for (const row of data) {
+        try {
+            const mappedRow: any = {}
+            Object.entries(mapping).forEach(([excelHeader, dbField]) => {
+                if (dbField) mappedRow[dbField] = row[excelHeader]
+            })
+
+            if (!mappedRow.name || !mappedRow.address) {
+                results.errors++
+                continue
+            }
+
+            // Deduplication
+            const { data: existing } = await supabase
+                .from('communities')
+                .select('id')
+                .or(`name.eq."${mappedRow.name}",address.eq."${mappedRow.address}"`)
+                .maybeSingle()
+
+            if (existing) {
+                if (options.updateIfExists) {
+                    const { error } = await supabase
+                        .from('communities')
+                        .update(mappedRow)
+                        .eq('id', existing.id)
+                    if (error) results.errors++
+                    else results.imported++
+                } else {
+                    results.skipped++
+                }
+                continue
+            }
+
+            // Geocoding
+            const geo = await geocodeAddress(mappedRow.address, mappedRow.city || '')
+
+            const { error } = await supabase
+                .from('communities')
+                .insert({
+                    ...mappedRow,
+                    ...geo
+                })
+
+            if (error) {
+                console.error('Error inserting community:', error)
+                results.errors++
+            } else {
+                results.imported++
+            }
+        } catch (err) {
+            console.error('Row processing error:', err)
+            results.errors++
+        }
+    }
+
+    revalidatePath('/dashboard/communities')
+    return { success: true, ...results }
+}
