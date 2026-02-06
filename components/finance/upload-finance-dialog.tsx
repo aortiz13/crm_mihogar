@@ -167,7 +167,7 @@ export function UploadFinanceDialog({ period, communityId, onSuccess }: UploadFi
                     <FileUp className="mr-2 h-4 w-4" /> Cargar Datos
                 </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
                 <DialogHeader>
                     <DialogTitle>Importar Gastos Comunes</DialogTitle>
                     <DialogDescription>
@@ -175,130 +175,134 @@ export function UploadFinanceDialog({ period, communityId, onSuccess }: UploadFi
                     </DialogDescription>
                 </DialogHeader>
 
-                {step === 'upload' ? (
-                    <div className="flex flex-col items-center justify-center p-12 border-2 border-dashed rounded-lg bg-muted/30">
-                        {loading ? (
-                            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                        ) : (
-                            <>
-                                <FileUp className="h-12 w-12 text-muted-foreground mb-4" />
-                                <Label htmlFor="file-upload" className="cursor-pointer">
-                                    <div className="bg-primary text-primary-foreground px-4 py-2 rounded-md hover:opacity-90 transition-opacity">
-                                        Seleccionar Archivo Excel
+                <div className="flex-1 overflow-hidden">
+                    {step === 'upload' ? (
+                        <div className="flex flex-col items-center justify-center p-12 border-2 border-dashed rounded-lg bg-muted/30">
+                            {loading ? (
+                                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                            ) : (
+                                <>
+                                    <FileUp className="h-12 w-12 text-muted-foreground mb-4" />
+                                    <Label htmlFor="file-upload" className="cursor-pointer">
+                                        <div className="bg-primary text-primary-foreground px-4 py-2 rounded-md hover:opacity-90 transition-opacity">
+                                            Seleccionar Archivo Excel
+                                        </div>
+                                        <input
+                                            id="file-upload"
+                                            type="file"
+                                            className="hidden"
+                                            accept=".xlsx, .xls"
+                                            onChange={handleFileChange}
+                                        />
+                                    </Label>
+                                    <p className="mt-2 text-xs text-muted-foreground">Formato aceptado: .xlsx, .xls</p>
+                                </>
+                            )}
+                        </div>
+                    ) : (
+                        <ScrollArea className="h-[60vh] pr-4">
+                            <div className="space-y-6">
+                                <div className="space-y-4">
+                                    <div className="space-y-2">
+                                        <Label>1. Columna de Identificación (Unidad/Depto/Casa)</Label>
+                                        <Select value={unitCol} onValueChange={setUnitCol}>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Selecciona la columna..." />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {headers.map(h => (
+                                                    <SelectItem key={h} value={h}>{h}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
                                     </div>
-                                    <input
-                                        id="file-upload"
-                                        type="file"
-                                        className="hidden"
-                                        accept=".xlsx, .xls"
-                                        onChange={handleFileChange}
-                                    />
-                                </Label>
-                                <p className="mt-2 text-xs text-muted-foreground">Formato aceptado: .xlsx, .xls</p>
-                            </>
-                        )}
-                    </div>
-                ) : (
-                    <div className="space-y-6">
-                        <div className="space-y-4">
-                            <div className="space-y-2">
-                                <Label>1. Columna de Identificación (Unidad/Depto/Casa)</Label>
-                                <Select value={unitCol} onValueChange={setUnitCol}>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Selecciona la columna..." />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {headers.map(h => (
-                                            <SelectItem key={h} value={h}>{h}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
 
-                            <div className="space-y-2">
-                                <Label>2. Columna de "Total" (Opcional, para validación)</Label>
-                                <Select value={totalCol} onValueChange={setTotalCol}>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Ninguna" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="none">No validar</SelectItem>
-                                        {headers.map(h => (
-                                            <SelectItem key={h} value={h} disabled={h === unitCol}>{h}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
+                                    <div className="space-y-2">
+                                        <Label>2. Columna de "Total" (Opcional, para validación)</Label>
+                                        <Select value={totalCol} onValueChange={setTotalCol}>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder="Ninguna" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="none">No validar</SelectItem>
+                                                {headers.map(h => (
+                                                    <SelectItem key={h} value={h} disabled={h === unitCol}>{h}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
 
-                            <div className="space-y-4">
-                                <Label>3. Selecciona las columnas que representan Cobros (Conceptos)</Label>
-                                <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-[200px] overflow-auto p-2 border rounded-md">
-                                    {headers.map(h => (
-                                        <div key={h} className="flex items-center space-x-2 p-1">
-                                            <Checkbox
-                                                id={`check-${h}`}
-                                                checked={conceptCols.includes(h)}
-                                                onCheckedChange={() => toggleConcept(h)}
-                                                disabled={h === unitCol || h === totalCol || creditCols.includes(h)}
-                                            />
-                                            <label
-                                                htmlFor={`check-${h}`}
-                                                className={`text-xs truncate ${h === unitCol || h === totalCol || creditCols.includes(h) ? 'opacity-50 line-through' : 'cursor-pointer'}`}
-                                            >
-                                                {h}
-                                            </label>
+                                    <div className="space-y-4">
+                                        <Label>3. Selecciona las columnas que representan Cobros (Conceptos)</Label>
+                                        <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-[200px] overflow-auto p-2 border rounded-md">
+                                            {headers.map(h => (
+                                                <div key={h} className="flex items-center space-x-2 p-1">
+                                                    <Checkbox
+                                                        id={`check-${h}`}
+                                                        checked={conceptCols.includes(h)}
+                                                        onCheckedChange={() => toggleConcept(h)}
+                                                        disabled={h === unitCol || h === totalCol || creditCols.includes(h)}
+                                                    />
+                                                    <label
+                                                        htmlFor={`check-${h}`}
+                                                        className={`text-xs truncate ${h === unitCol || h === totalCol || creditCols.includes(h) ? 'opacity-50 line-through' : 'cursor-pointer'}`}
+                                                    >
+                                                        {h}
+                                                    </label>
+                                                </div>
+                                            ))}
                                         </div>
-                                    ))}
-                                </div>
-                            </div>
+                                    </div>
 
-                            <div className="space-y-4">
-                                <Label>4. Selecciona las columnas que representan Saldos a Favor (Se restarán)</Label>
-                                <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-[200px] overflow-auto p-2 border rounded-md bg-green-50/30">
-                                    {headers.map(h => (
-                                        <div key={h} className="flex items-center space-x-2 p-1">
-                                            <Checkbox
-                                                id={`credit-${h}`}
-                                                checked={creditCols.includes(h)}
-                                                onCheckedChange={() => toggleCredit(h)}
-                                                disabled={h === unitCol || h === totalCol || conceptCols.includes(h)}
-                                            />
-                                            <label
-                                                htmlFor={`credit-${h}`}
-                                                className={`text-xs truncate ${h === unitCol || h === totalCol || conceptCols.includes(h) ? 'opacity-50 line-through' : 'cursor-pointer'}`}
-                                            >
-                                                {h}
-                                            </label>
+                                    <div className="space-y-4">
+                                        <Label>4. Selecciona las columnas que representan Saldos a Favor (Se restarán)</Label>
+                                        <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-[200px] overflow-auto p-2 border rounded-md bg-green-50/30">
+                                            {headers.map(h => (
+                                                <div key={h} className="flex items-center space-x-2 p-1">
+                                                    <Checkbox
+                                                        id={`credit-${h}`}
+                                                        checked={creditCols.includes(h)}
+                                                        onCheckedChange={() => toggleCredit(h)}
+                                                        disabled={h === unitCol || h === totalCol || conceptCols.includes(h)}
+                                                    />
+                                                    <label
+                                                        htmlFor={`credit-${h}`}
+                                                        className={`text-xs truncate ${h === unitCol || h === totalCol || conceptCols.includes(h) ? 'opacity-50 line-through' : 'cursor-pointer'}`}
+                                                    >
+                                                        {h}
+                                                    </label>
+                                                </div>
+                                            ))}
                                         </div>
-                                    ))}
+                                    </div>
                                 </div>
-                            </div>
-                        </div>
 
-                        {missingUnits && (
-                            <div className="p-4 border border-yellow-200 bg-yellow-50 rounded-lg space-y-3">
-                                <div className="flex items-center gap-2 text-yellow-800 font-medium text-sm">
+                                {missingUnits && (
+                                    <div className="p-4 border border-yellow-200 bg-yellow-50 rounded-lg space-y-3">
+                                        <div className="flex items-center gap-2 text-yellow-800 font-medium text-sm">
+                                            <AlertCircle className="h-4 w-4" />
+                                            <span>Unidades no encontradas ({missingUnits.length})</span>
+                                        </div>
+                                        <p className="text-xs text-yellow-700">
+                                            Las siguientes unidades no existen en el sistema. ¿Deseas crearlas ahora para completar la carga?
+                                        </p>
+                                        <div className="bg-white/50 p-2 rounded max-h-20 overflow-auto text-[10px] font-mono">
+                                            {missingUnits.join(', ')}
+                                        </div>
+                                        <Button size="sm" variant="outline" className="w-full bg-white text-yellow-800 border-yellow-300 hover:bg-yellow-100" onClick={handleCreateMissingUnits}>
+                                            Crear Unidades Faltantes
+                                        </Button>
+                                    </div>
+                                )}
+
+                                <div className="flex items-center gap-2 p-3 bg-blue-50 text-blue-800 rounded-md text-sm">
                                     <AlertCircle className="h-4 w-4" />
-                                    <span>Unidades no encontradas ({missingUnits.length})</span>
+                                    <p>Se omitirán automáticamente los valores en cero o vacíos.</p>
                                 </div>
-                                <p className="text-xs text-yellow-700">
-                                    Las siguientes unidades no existen en el sistema. ¿Deseas crearlas ahora para completar la carga?
-                                </p>
-                                <div className="bg-white/50 p-2 rounded max-h-20 overflow-auto text-[10px] font-mono">
-                                    {missingUnits.join(', ')}
-                                </div>
-                                <Button size="sm" variant="outline" className="w-full bg-white text-yellow-800 border-yellow-300 hover:bg-yellow-100" onClick={handleCreateMissingUnits}>
-                                    Crear Unidades Faltantes
-                                </Button>
                             </div>
-                        )}
-
-                        <div className="flex items-center gap-2 p-3 bg-blue-50 text-blue-800 rounded-md text-sm">
-                            <AlertCircle className="h-4 w-4" />
-                            <p>Se omitirán automáticamente los valores en cero o vacíos.</p>
-                        </div>
-                    </div>
-                )}
+                        </ScrollArea>
+                    )}
+                </div>
 
                 <DialogFooter className="flex justify-between items-center sm:justify-between w-full">
                     {step === 'map' && (
