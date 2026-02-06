@@ -38,6 +38,7 @@ export function UploadFinanceDialog({ period, communityId, onSuccess }: UploadFi
     const [unitCol, setUnitCol] = useState<string>('')
     const [totalCol, setTotalCol] = useState<string>('')
     const [conceptCols, setConceptCols] = useState<string[]>([])
+    const [creditCols, setCreditCols] = useState<string[]>([])
 
     // Results state
     const [missingUnits, setMissingUnits] = useState<string[] | null>(null)
@@ -92,6 +93,16 @@ export function UploadFinanceDialog({ period, communityId, onSuccess }: UploadFi
         setConceptCols(prev =>
             prev.includes(header) ? prev.filter(c => c !== header) : [...prev, header]
         )
+        // If it was a credit, remove it from credits
+        setCreditCols(prev => prev.filter(c => c !== header))
+    }
+
+    const toggleCredit = (header: string) => {
+        setCreditCols(prev =>
+            prev.includes(header) ? prev.filter(c => c !== header) : [...prev, header]
+        )
+        // If it was a concept, remove it from concepts
+        setConceptCols(prev => prev.filter(c => c !== header))
     }
 
     const handleCreateMissingUnits = async () => {
@@ -117,6 +128,7 @@ export function UploadFinanceDialog({ period, communityId, onSuccess }: UploadFi
         const result = await processFinanceExcel(period.id, communityId, fileData, {
             unitCol,
             conceptCols,
+            creditCols,
             totalCol: totalCol || undefined
         })
         setLoading(false)
@@ -220,18 +232,40 @@ export function UploadFinanceDialog({ period, communityId, onSuccess }: UploadFi
 
                             <div className="space-y-4">
                                 <Label>3. Selecciona las columnas que representan Cobros (Conceptos)</Label>
-                                <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-[300px] overflow-auto p-2 border rounded-md">
+                                <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-[200px] overflow-auto p-2 border rounded-md">
                                     {headers.map(h => (
                                         <div key={h} className="flex items-center space-x-2 p-1">
                                             <Checkbox
                                                 id={`check-${h}`}
                                                 checked={conceptCols.includes(h)}
                                                 onCheckedChange={() => toggleConcept(h)}
-                                                disabled={h === unitCol || h === totalCol}
+                                                disabled={h === unitCol || h === totalCol || creditCols.includes(h)}
                                             />
                                             <label
                                                 htmlFor={`check-${h}`}
-                                                className={`text-xs truncate ${h === unitCol || h === totalCol ? 'opacity-50 line-through' : 'cursor-pointer'}`}
+                                                className={`text-xs truncate ${h === unitCol || h === totalCol || creditCols.includes(h) ? 'opacity-50 line-through' : 'cursor-pointer'}`}
+                                            >
+                                                {h}
+                                            </label>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="space-y-4">
+                                <Label>4. Selecciona las columnas que representan Saldos a Favor (Se restarán)</Label>
+                                <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-[200px] overflow-auto p-2 border rounded-md bg-green-50/30">
+                                    {headers.map(h => (
+                                        <div key={h} className="flex items-center space-x-2 p-1">
+                                            <Checkbox
+                                                id={`credit-${h}`}
+                                                checked={creditCols.includes(h)}
+                                                onCheckedChange={() => toggleCredit(h)}
+                                                disabled={h === unitCol || h === totalCol || conceptCols.includes(h)}
+                                            />
+                                            <label
+                                                htmlFor={`credit-${h}`}
+                                                className={`text-xs truncate ${h === unitCol || h === totalCol || conceptCols.includes(h) ? 'opacity-50 line-through' : 'cursor-pointer'}`}
                                             >
                                                 {h}
                                             </label>

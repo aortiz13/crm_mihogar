@@ -58,7 +58,7 @@ export async function processFinanceExcel(
     periodId: number,
     communityId: string,
     fileBase64: string,
-    mapping: { unitCol: string; conceptCols: string[]; totalCol?: string }
+    mapping: { unitCol: string; conceptCols: string[]; creditCols?: string[]; totalCol?: string }
 ) {
     const supabase = await createClient()
 
@@ -115,10 +115,46 @@ export async function processFinanceExcel(
                     unit_id: unitId,
                     concept_name: concept,
                     amount: amount,
+                    concept_type: 'VARIABLE',
                     source_column: concept
                 })
                 unitTotalSum += amount
                 totalBilled += amount
+            }
+        }
+
+        // 3.2 Process Credits (Subtract from total)
+        const creditCols = mapping.creditCols || []
+        for (const concept of creditCols) {
+            let val = row[concept]
+            let amount = 0
+
+            if (typeof val === 'number') {
+                amount = val
+            } else if (typeof val === 'string') {
+                const clean = val.replace(/[^0-9,.-]/g, '')
+                if (clean.includes('.') && clean.includes(',')) {
+                    amount = parseFloat(clean.replace(/\./g, '').replace(',', '.'))
+                } else if (clean.includes(',')) {
+                    amount = parseFloat(clean.replace(',', '.'))
+                } else {
+                    amount = parseFloat(clean)
+                }
+            }
+
+            if (!isNaN(amount) && amount !== 0) {
+                // We store credits with negative amounts for total calculations
+                // and mark them specifically.
+                chargeDetails.push({
+                    period_id: periodId,
+                    unit_id: unitId,
+                    concept_name: concept,
+                    amount: -Math.abs(amount),
+                    concept_type: 'CREDIT',
+                    source_column: concept
+                })
+                unitTotalSum -= Math.abs(amount)
+                totalBilled -= Math.abs(amount)
             }
         }
 
