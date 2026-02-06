@@ -123,6 +123,9 @@ export function UploadFinanceDialog({ period, communityId, onSuccess }: UploadFi
 
         if (result.error) {
             toast.error(result.error)
+            if (result.missingUnits) {
+                setMissingUnits(result.missingUnits)
+            }
         } else {
             toast.success(`Carga exitosa: ${result.insertedCount} registros insertados`)
 

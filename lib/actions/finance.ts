@@ -92,7 +92,23 @@ export async function processFinanceExcel(
 
         let unitTotalSum = 0
         for (const concept of mapping.conceptCols) {
-            const amount = parseFloat(row[concept])
+            let val = row[concept]
+            let amount = 0
+
+            if (typeof val === 'number') {
+                amount = val
+            } else if (typeof val === 'string') {
+                // Remove currency symbols, thousands dots, and handle comma decimals
+                const clean = val.replace(/[^0-9,.-]/g, '')
+                if (clean.includes('.') && clean.includes(',')) {
+                    amount = parseFloat(clean.replace(/\./g, '').replace(',', '.'))
+                } else if (clean.includes(',')) {
+                    amount = parseFloat(clean.replace(',', '.'))
+                } else {
+                    amount = parseFloat(clean)
+                }
+            }
+
             if (!isNaN(amount) && amount !== 0) {
                 chargeDetails.push({
                     period_id: periodId,
@@ -116,7 +132,10 @@ export async function processFinanceExcel(
     }
 
     if (chargeDetails.length === 0) {
-        return { error: 'No se detectaron cobros válidos en el archivo' }
+        return {
+            error: 'No se detectaron cobros válidos. Verifique que los nombres de las unidades coincidan con el sistema.',
+            missingUnits: missingUnits.length > 0 ? missingUnits : null
+        }
     }
 
     // 4. Batch Insert
