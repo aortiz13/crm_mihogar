@@ -1,8 +1,10 @@
 import { getContact, getContactNotes } from '@/lib/actions/contacts'
+import { getContactUnits } from '@/lib/actions/units'
 import { getCommunities } from '@/lib/actions/communities'
 import { getContactActivities } from '@/lib/actions/activities'
 import { ContactDetail } from '@/components/contacts/contact-detail'
 import { Storyline } from '@/components/activities/storyline'
+import { ContactUnits } from '@/components/contacts/contact-units'
 import { AddEventDialog } from '@/components/activities/add-event-dialog'
 import { notFound } from 'next/navigation'
 import { Button } from '@/components/ui/button'
@@ -18,11 +20,12 @@ interface PageProps {
 
 export default async function ContactDetailPage(props: PageProps) {
     const params = await props.params;
-    const [contact, notes, communities, activities] = await Promise.all([
+    const [contact, notes, communities, activities, unitRelations] = await Promise.all([
         getContact(params.id),
         getContactNotes(params.id),
         getCommunities(),
-        getContactActivities(params.id)
+        getContactActivities(params.id),
+        getContactUnits(params.id)
     ])
 
     if (!contact) {
@@ -43,6 +46,7 @@ export default async function ContactDetailPage(props: PageProps) {
             <Tabs defaultValue="info" className="space-y-4">
                 <TabsList>
                     <TabsTrigger value="info">Perfil</TabsTrigger>
+                    <TabsTrigger value="properties">Propiedades</TabsTrigger>
                     <TabsTrigger value="storyline">Storyline</TabsTrigger>
                 </TabsList>
                 <TabsContent value="info">
@@ -51,6 +55,9 @@ export default async function ContactDetailPage(props: PageProps) {
                         notes={notes}
                         communities={communities}
                     />
+                </TabsContent>
+                <TabsContent value="properties">
+                    <ContactUnits relations={unitRelations.data || []} />
                 </TabsContent>
                 <TabsContent value="storyline" className="space-y-4">
                     <div className="flex justify-end">

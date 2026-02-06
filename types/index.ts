@@ -102,6 +102,7 @@ export interface Contact {
     communities?: {
         name: string
     }
+    unit_relations?: UnitContact[]
 }
 
 export interface ContactNote {
@@ -118,6 +119,23 @@ export interface Unit {
     unit_number: string
     resident_email: string | null
     created_at: string
+    contact_relations?: UnitContact[]
+    communities?: { name: string }
+}
+
+export interface UnitContact {
+    id: number
+    unit_id: number
+    contact_id: string
+    role: 'OWNER' | 'TENANT' | 'RESIDENT' | 'BROKER' | 'ADMIN'
+    is_primary_payer: boolean
+    is_active: boolean
+    start_date: string
+    end_date: string | null
+    created_at: string
+    // Joined relations
+    unit?: Unit
+    contact?: Contact
 }
 
 export interface FinancePeriod {

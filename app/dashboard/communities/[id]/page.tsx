@@ -6,6 +6,7 @@ import { CommunityDocuments } from '@/components/communities/community-documents
 import { CommunityChat } from '@/components/communities/community-chat'
 import { Storyline } from '@/components/activities/storyline'
 import { CommunityFinance } from '@/components/communities/community-finance'
+import { UnitList } from '@/components/communities/unit-list'
 import { AddEventDialog } from '@/components/activities/add-event-dialog'
 import { EmailSettingsForm } from '@/components/communities/email-settings-form'
 import { DeleteCommunityDialog } from '@/components/communities/delete-community-dialog'
@@ -44,6 +45,7 @@ export default async function CommunityDetailPage({ params }: { params: Promise<
             <Tabs defaultValue="info" className="space-y-4">
                 <TabsList>
                     <TabsTrigger value="info">Información</TabsTrigger>
+                    <TabsTrigger value="units">Unidades</TabsTrigger>
                     <TabsTrigger value="storyline">Storyline</TabsTrigger>
                     <TabsTrigger value="finance">Finanzas</TabsTrigger>
                     <TabsTrigger value="documents">Base de Conocimiento</TabsTrigger>
@@ -52,6 +54,9 @@ export default async function CommunityDetailPage({ params }: { params: Promise<
                 </TabsList>
                 <TabsContent value="info">
                     <CommunityInfo community={community} />
+                </TabsContent>
+                <TabsContent value="units">
+                    <UnitList communityId={community.id} />
                 </TabsContent>
                 <TabsContent value="storyline" className="space-y-4">
                     <div className="flex justify-end">
