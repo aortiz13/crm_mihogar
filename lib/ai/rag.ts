@@ -1,8 +1,8 @@
-import { openai } from '@/lib/openai'
+import { getOpenAI } from '@/lib/openai'
 import { createClient } from '@/lib/supabase/server'
 
 export async function generateEmbedding(text: string) {
-    const response = await openai.embeddings.create({
+    const response = await getOpenAI().embeddings.create({
         model: 'text-embedding-3-small',
         input: text.replace(/\n/g, ' '),
     })

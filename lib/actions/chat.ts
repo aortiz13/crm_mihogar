@@ -1,7 +1,7 @@
 'use server'
 
 import { searchCommunityContext } from '@/lib/ai/rag'
-import { openai } from '@/lib/openai'
+import { getOpenAI } from '@/lib/openai'
 
 export async function chatWithCommunity(communityId: string, messages: any[]) {
     const lastMessage = messages[messages.length - 1].content
@@ -21,7 +21,7 @@ export async function chatWithCommunity(communityId: string, messages: any[]) {
   ${contextText}`
 
     // 2. Generate Response
-    const response = await openai.chat.completions.create({
+    const response = await getOpenAI().chat.completions.create({
         model: 'gpt-3.5-turbo',
         messages: [
             { role: 'system', content: systemPrompt },
