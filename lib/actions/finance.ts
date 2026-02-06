@@ -91,70 +91,95 @@ export async function processFinanceExcel(
         }
 
         let unitTotalSum = 0
+        // 3.1 Process Concepts (duplicate columns handled via regex lookup)
+        const rowKeys = Object.keys(row)
         for (const concept of mapping.conceptCols) {
-            let val = row[concept]
-            let amount = 0
+            // Find all keys that start with the concept name (exact match or with _N suffix from xlsx)
+            // e.g. "Convenio De Pago", "Convenio De Pago_1", "Convenio De Pago_2"
+            const matchingKeys = rowKeys.filter(key =>
+                key === concept || new RegExp(`^${concept}_\\d+$`).test(key)
+            )
 
-            if (typeof val === 'number') {
-                amount = val
-            } else if (typeof val === 'string') {
-                // Remove currency symbols, thousands dots, and handle comma decimals
-                const clean = val.replace(/[^0-9,.-]/g, '')
-                if (clean.includes('.') && clean.includes(',')) {
-                    amount = parseFloat(clean.replace(/\./g, '').replace(',', '.'))
-                } else if (clean.includes(',')) {
-                    amount = parseFloat(clean.replace(',', '.'))
-                } else {
-                    amount = parseFloat(clean)
+            let conceptTotal = 0
+            let lastSourceColumn = concept
+
+            for (const key of matchingKeys) {
+                let val = row[key]
+                let amount = 0
+
+                if (typeof val === 'number') {
+                    amount = val
+                } else if (typeof val === 'string') {
+                    // Remove currency symbols, thousands dots, and handle comma decimals
+                    const clean = val.replace(/[^0-9,.-]/g, '')
+                    if (clean.includes('.') && clean.includes(',')) {
+                        amount = parseFloat(clean.replace(/\./g, '').replace(',', '.'))
+                    } else if (clean.includes(',')) {
+                        amount = parseFloat(clean.replace(',', '.'))
+                    } else {
+                        amount = parseFloat(clean)
+                    }
+                }
+
+                if (!isNaN(amount) && amount !== 0) {
+                    conceptTotal += amount
+                    lastSourceColumn = key // Keep track of at least one valid source
                 }
             }
 
-            if (!isNaN(amount) && amount !== 0) {
+            if (conceptTotal !== 0) {
                 chargeDetails.push({
                     period_id: periodId,
                     unit_id: unitId,
-                    concept_name: concept,
-                    amount: amount,
+                    concept_name: concept, // Use original concept name for DB
+                    amount: conceptTotal,
                     concept_type: 'VARIABLE',
-                    source_column: concept
+                    source_column: matchingKeys.length > 1 ? `${concept} (Sum)` : lastSourceColumn
                 })
-                unitTotalSum += amount
-                totalBilled += amount
+                unitTotalSum += conceptTotal
+                totalBilled += conceptTotal
             }
         }
 
         // 3.2 Process Credits (Subtract from total)
         const creditCols = mapping.creditCols || []
         for (const concept of creditCols) {
-            let val = row[concept]
-            let amount = 0
+            // Find all keys that match concept or concept_N
+            const matchingKeys = rowKeys.filter(key =>
+                key === concept || new RegExp(`^${concept}_\\d+$`).test(key)
+            )
 
-            if (typeof val === 'number') {
-                amount = val
-            } else if (typeof val === 'string') {
-                const clean = val.replace(/[^0-9,.-]/g, '')
-                if (clean.includes('.') && clean.includes(',')) {
-                    amount = parseFloat(clean.replace(/\./g, '').replace(',', '.'))
-                } else if (clean.includes(',')) {
-                    amount = parseFloat(clean.replace(',', '.'))
-                } else {
-                    amount = parseFloat(clean)
+            for (const key of matchingKeys) {
+                let val = row[key]
+                let amount = 0
+
+                if (typeof val === 'number') {
+                    amount = val
+                } else if (typeof val === 'string') {
+                    const clean = val.replace(/[^0-9,.-]/g, '')
+                    if (clean.includes('.') && clean.includes(',')) {
+                        amount = parseFloat(clean.replace(/\./g, '').replace(',', '.'))
+                    } else if (clean.includes(',')) {
+                        amount = parseFloat(clean.replace(',', '.'))
+                    } else {
+                        amount = parseFloat(clean)
+                    }
                 }
-            }
 
-            if (!isNaN(amount) && amount !== 0) {
-                // We store credits with negative amounts for total calculations
-                // and mark them specifically.
-                chargeDetails.push({
-                    period_id: periodId,
-                    unit_id: unitId,
-                    concept_name: concept,
-                    amount: -Math.abs(amount),
-                    concept_type: 'CREDIT',
-                    source_column: concept
-                })
-                unitTotalSum -= Math.abs(amount)
-                totalBilled -= Math.abs(amount)
+                if (!isNaN(amount) && amount !== 0) {
+                    // We store credits with negative amounts for total calculations
+                    // and mark them specifically.
+                    chargeDetails.push({
+                        period_id: periodId,
+                        unit_id: unitId,
+                        concept_name: concept,
+                        amount: -Math.abs(amount),
+                        concept_type: 'CREDIT',
+                        source_column: key
+                    })
+                    unitTotalSum -= Math.abs(amount)
+                    totalBilled -= Math.abs(amount)
+                }
             }
         }
 

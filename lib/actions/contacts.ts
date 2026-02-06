@@ -82,6 +82,31 @@ export async function createContact(formData: FormData) {
         return { error: error.message }
     }
 
+    // Auto-sync with pivot table if unit info provided
+    if (community_id && unit_number) {
+        const { data: unit } = await supabase
+            .from('units')
+            .upsert({ 
+                community_id, 
+                unit_number: unit_number.trim() 
+            }, { onConflict: 'community_id, unit_number' })
+            .select()
+            .single()
+
+        if (unit) {
+            await supabase
+                .from('unit_contacts')
+                .upsert({
+                    unit_id: unit.id,
+                    contact_id: data.id,
+                    role: 'RESIDENT',
+                    is_active: true,
+                    is_primary_payer: true,
+                    start_date: new Date().toISOString().split('T')[0]
+                }, { onConflict: 'unit_id, contact_id' })
+        }
+    }
+
     revalidatePath('/dashboard/contactos')
     return { success: true, data }
 }
@@ -97,6 +122,34 @@ export async function updateContact(id: string, data: Partial<Contact>) {
     if (error) {
         console.error('Error updating contact:', error)
         return { error: error.message }
+    }
+
+    // Sync pivot if unit/community changed
+    if (data.community_id || data.unit_number) {
+        const { data: fullContact } = await supabase.from('contacts').select('*').eq('id', id).single()
+        if (fullContact?.community_id && fullContact?.unit_number) {
+            const { data: unit } = await supabase
+                .from('units')
+                .upsert({ 
+                    community_id: fullContact.community_id, 
+                    unit_number: fullContact.unit_number.trim() 
+                }, { onConflict: 'community_id, unit_number' })
+                .select()
+                .single()
+
+            if (unit) {
+                await supabase
+                    .from('unit_contacts')
+                    .upsert({
+                        unit_id: unit.id,
+                        contact_id: id,
+                        role: 'RESIDENT',
+                        is_active: true,
+                        is_primary_payer: true,
+                        start_date: new Date().toISOString().split('T')[0]
+                    }, { onConflict: 'unit_id, contact_id' })
+            }
+        }
     }
 
     revalidatePath(`/dashboard/contacts/${id}`)
