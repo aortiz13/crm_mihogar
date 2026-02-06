@@ -111,9 +111,9 @@ export function CreateTaskForm({ contacts, communities, onCancel, onCreate, clas
     }
 
     return (
-        <div className={cn("flex flex-col h-full bg-background", className)}>
+        <div className={cn("flex flex-col h-full bg-background overflow-hidden", className)}>
             {/* Header Section */}
-            <div className="p-6 pb-2 space-y-4">
+            <div className="px-6 pt-6 pb-2 space-y-4 shrink-0">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3 flex-1">
                         <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-sm dark:bg-emerald-950 dark:text-emerald-400">
@@ -135,9 +135,10 @@ export function CreateTaskForm({ contacts, communities, onCancel, onCreate, clas
                         <X className="h-4 w-4" />
                     </Button>
                 </div>
+            </div>
 
-
-                <Tabs defaultValue="inicio" className="w-full">
+            <Tabs defaultValue="inicio" className="flex flex-col flex-1 overflow-hidden w-full">
+                <div className="px-6 shrink-0">
                     <TabsList className="w-fit">
                         <TabsTrigger value="inicio" className="gap-2">
                             <Home className="w-3.5 h-3.5" />
@@ -148,202 +149,202 @@ export function CreateTaskForm({ contacts, communities, onCancel, onCreate, clas
                             Archivos
                         </TabsTrigger>
                     </TabsList>
+                </div>
 
-                    <div className="flex-1 overflow-y-auto">
-                        <TabsContent value="inicio" className="m-0 py-6 space-y-6">
-                            {/* Metadata List */}
-                            <div className="space-y-4 px-6 md:px-0">
-                                {/* Relaciones / Contact */}
+                <div className="flex-1 overflow-y-auto min-h-0">
+                    <TabsContent value="inicio" className="m-0 py-6 space-y-6">
+                        {/* Metadata List */}
+                        <div className="space-y-4 px-6">
+                            {/* Relaciones / Contact */}
+                            <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                                <div className="flex items-center gap-2 text-sm text-muted-foreground font-medium">
+                                    <ArrowUpRight className="w-4 h-4" />
+                                    <span>Relaciones</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <Select value={selectedContactId} onValueChange={setSelectedContactId}>
+                                        <SelectTrigger className="h-8 w-fit min-w-[140px] text-xs">
+                                            <SelectValue placeholder="Seleccionar contacto" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="none">Sin contacto</SelectItem>
+                                            {contacts.map((contact) => (
+                                                <SelectItem key={contact.id} value={contact.id}>
+                                                    {contact.full_name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+
+                            {/* Community */}
+                            <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                                <div className="flex items-center gap-2 text-sm text-muted-foreground font-medium">
+                                    <Building2 className="w-4 h-4" />
+                                    <span>Condominio</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <Select value={selectedCommunityId} onValueChange={setSelectedCommunityId}>
+                                        <SelectTrigger className="h-8 w-fit min-w-[140px] text-xs">
+                                            <SelectValue placeholder="Seleccionar condominio" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="none">Sin condominio</SelectItem>
+                                            {communities.map((community) => (
+                                                <SelectItem key={community.id} value={community.id}>
+                                                    {community.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+
+                            {/* Unit */}
+                            {selectedCommunityId !== 'none' && (
                                 <div className="grid grid-cols-[140px_1fr] items-center gap-4">
                                     <div className="flex items-center gap-2 text-sm text-muted-foreground font-medium">
-                                        <ArrowUpRight className="w-4 h-4" />
-                                        <span>Relaciones</span>
+                                        <DoorClosed className="w-4 h-4" />
+                                        <span>Unidad</span>
                                     </div>
                                     <div className="flex items-center gap-2">
-                                        <Select value={selectedContactId} onValueChange={setSelectedContactId}>
+                                        <Select
+                                            value={selectedUnitId}
+                                            onValueChange={setSelectedUnitId}
+                                            disabled={isLoadingUnits}
+                                        >
                                             <SelectTrigger className="h-8 w-fit min-w-[140px] text-xs">
-                                                <SelectValue placeholder="Seleccionar contacto" />
+                                                <SelectValue placeholder={isLoadingUnits ? "Cargando..." : "Seleccionar unidad"} />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                <SelectItem value="none">Sin contacto</SelectItem>
-                                                {contacts.map((contact) => (
-                                                    <SelectItem key={contact.id} value={contact.id}>
-                                                        {contact.full_name}
+                                                <SelectItem value="none">Sin unidad</SelectItem>
+                                                {units.map((unit) => (
+                                                    <SelectItem key={unit.id} value={unit.id.toString()}>
+                                                        {unit.unit_number}
                                                     </SelectItem>
                                                 ))}
                                             </SelectContent>
                                         </Select>
                                     </div>
                                 </div>
+                            )}
 
-                                {/* Community */}
-                                <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-                                    <div className="flex items-center gap-2 text-sm text-muted-foreground font-medium">
-                                        <Building2 className="w-4 h-4" />
-                                        <span>Condominio</span>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <Select value={selectedCommunityId} onValueChange={setSelectedCommunityId}>
-                                            <SelectTrigger className="h-8 w-fit min-w-[140px] text-xs">
-                                                <SelectValue placeholder="Seleccionar condominio" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="none">Sin condominio</SelectItem>
-                                                {communities.map((community) => (
-                                                    <SelectItem key={community.id} value={community.id}>
-                                                        {community.name}
-                                                    </SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
+
+                            {/* Creado Por (Static for now) */}
+                            <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                                <div className="flex items-center gap-2 text-sm text-muted-foreground font-medium">
+                                    <UserCircle className="w-4 h-4" />
+                                    <span>Creado Por</span>
                                 </div>
-
-                                {/* Unit */}
-                                {selectedCommunityId !== 'none' && (
-                                    <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-                                        <div className="flex items-center gap-2 text-sm text-muted-foreground font-medium">
-                                            <DoorClosed className="w-4 h-4" />
-                                            <span>Unidad</span>
+                                <div className="flex items-center gap-2">
+                                    <div className="flex items-center gap-1.5 py-0.5 text-sm">
+                                        <div className="bg-muted text-muted-foreground border w-5 h-5 rounded flex items-center justify-center text-[10px] font-bold">
+                                            YO
                                         </div>
-                                        <div className="flex items-center gap-2">
-                                            <Select
-                                                value={selectedUnitId}
-                                                onValueChange={setSelectedUnitId}
-                                                disabled={isLoadingUnits}
-                                            >
-                                                <SelectTrigger className="h-8 w-fit min-w-[140px] text-xs">
-                                                    <SelectValue placeholder={isLoadingUnits ? "Cargando..." : "Seleccionar unidad"} />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="none">Sin unidad</SelectItem>
-                                                    {units.map((unit) => (
-                                                        <SelectItem key={unit.id} value={unit.id.toString()}>
-                                                            {unit.unit_number}
-                                                        </SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
-                                        </div>
-                                    </div>
-                                )}
-
-
-                                {/* Creado Por (Static for now) */}
-                                <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-                                    <div className="flex items-center gap-2 text-sm text-muted-foreground font-medium">
-                                        <UserCircle className="w-4 h-4" />
-                                        <span>Creado Por</span>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <div className="flex items-center gap-1.5 py-0.5 text-sm">
-                                            <div className="bg-muted text-muted-foreground border w-5 h-5 rounded flex items-center justify-center text-[10px] font-bold">
-                                                YO
-                                            </div>
-                                            <span className="font-medium text-foreground">
-                                                Moi
-                                            </span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Fecha / Due Date */}
-                                <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-                                    <div className="flex items-center gap-2 text-sm text-muted-foreground font-medium">
-                                        <CalendarIcon className="w-4 h-4" />
-                                        <span>Fecha Límite</span>
-                                    </div>
-                                    <div>
-                                        <Input
-                                            type="date"
-                                            value={date}
-                                            onChange={(e) => setDate(e.target.value)}
-                                            className="h-8 w-full text-xs"
-                                        />
-                                    </div>
-                                </div>
-
-                                {/* Status */}
-                                <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-                                    <div className="flex items-center gap-2 text-sm text-muted-foreground font-medium">
-                                        <Clock className="w-4 h-4" />
-                                        <span>Estado</span>
-                                    </div>
-                                    <div>
-                                        <Select value={status} onValueChange={(val: any) => setStatus(val)}>
-                                            <SelectTrigger className="h-8 w-fit text-xs border-none shadow-none p-0 bg-transparent hover:bg-muted/50 px-2 rounded-md transition-colors">
-                                                <Badge variant="secondary" className={cn(
-                                                    "px-2.5 py-0.5 font-medium rounded-full text-[11px] uppercase tracking-wider mr-2",
-                                                    status === 'done' ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400" :
-                                                        status === 'in_progress' ? "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-400" :
-                                                            "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400"
-                                                )}>
-                                                    {status === 'done' ? 'Resuelto' : status === 'in_progress' ? 'En Progreso' : 'Pendiente'}
-                                                </Badge>
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="todo">Pendiente</SelectItem>
-                                                <SelectItem value="in_progress">En Progreso</SelectItem>
-                                                <SelectItem value="done">Resuelto</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                </div>
-
-                                {/* Priority */}
-                                <div className="grid grid-cols-[140px_1fr] items-center gap-4">
-                                    <div className="flex items-center gap-2 text-sm text-muted-foreground font-medium">
-                                        <div className="w-4 flex justify-center text-xs font-bold text-muted-foreground">!</div>
-                                        <span>Prioridad</span>
-                                    </div>
-                                    <div>
-                                        <Select value={priority} onValueChange={(val: any) => setPriority(val)}>
-                                            <SelectTrigger className="h-8 w-[140px] text-xs">
-                                                <SelectValue />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="low">Baja</SelectItem>
-                                                <SelectItem value="medium">Media</SelectItem>
-                                                <SelectItem value="high">Alta</SelectItem>
-                                                <SelectItem value="urgent">Urgente</SelectItem>
-                                            </SelectContent>
-                                        </Select>
+                                        <span className="font-medium text-foreground">
+                                            Moi
+                                        </span>
                                     </div>
                                 </div>
                             </div>
 
-                            <Separator className="mx-6 md:mx-0" />
-
-                            {/* Assigned / Description Section */}
-                            <div className="space-y-4 px-6 md:px-0">
-                                <div className="flex items-center justify-between">
-                                    <h3 className="text-sm font-semibold text-foreground tracking-tight">Descripción</h3>
+                            {/* Fecha / Due Date */}
+                            <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                                <div className="flex items-center gap-2 text-sm text-muted-foreground font-medium">
+                                    <CalendarIcon className="w-4 h-4" />
+                                    <span>Fecha Límite</span>
                                 </div>
-
-                                <div className="p-0">
-                                    <Textarea
-                                        placeholder="Añadir descripción..."
-                                        className="min-h-[150px] resize-none bg-muted/30 border-border/50 focus-visible:ring-1 focus-visible:ring-ring"
-                                        value={description}
-                                        onChange={(e) => setDescription(e.target.value)}
+                                <div>
+                                    <Input
+                                        type="date"
+                                        value={date}
+                                        onChange={(e) => setDate(e.target.value)}
+                                        className="h-8 w-full text-xs"
                                     />
                                 </div>
                             </div>
-                        </TabsContent>
 
-                        <TabsContent value="files" className="m-0 py-6 px-6 md:px-0">
-                            <div className="flex flex-col items-center justify-center py-12 text-muted-foreground border-2 border-dashed rounded-lg bg-muted/20">
-                                <Paperclip className="w-10 h-10 mb-3 opacity-20" />
-                                <p className="text-sm font-medium text-foreground/70">No hay archivos adjuntos</p>
-                                <p className="text-xs opacity-60 font-medium">Arrastra archivos aquí para subirlos</p>
+                            {/* Status */}
+                            <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                                <div className="flex items-center gap-2 text-sm text-muted-foreground font-medium">
+                                    <Clock className="w-4 h-4" />
+                                    <span>Estado</span>
+                                </div>
+                                <div>
+                                    <Select value={status} onValueChange={(val: any) => setStatus(val)}>
+                                        <SelectTrigger className="h-8 w-fit text-xs border-none shadow-none p-0 bg-transparent hover:bg-muted/50 px-2 rounded-md transition-colors">
+                                            <Badge variant="secondary" className={cn(
+                                                "px-2.5 py-0.5 font-medium rounded-full text-[11px] uppercase tracking-wider mr-2",
+                                                status === 'done' ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400" :
+                                                    status === 'in_progress' ? "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-400" :
+                                                        "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400"
+                                            )}>
+                                                {status === 'done' ? 'Resuelto' : status === 'in_progress' ? 'En Progreso' : 'Pendiente'}
+                                            </Badge>
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="todo">Pendiente</SelectItem>
+                                            <SelectItem value="in_progress">En Progreso</SelectItem>
+                                            <SelectItem value="done">Resuelto</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
                             </div>
-                        </TabsContent>
-                    </div>
-                </Tabs>
-            </div>
+
+                            {/* Priority */}
+                            <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                                <div className="flex items-center gap-2 text-sm text-muted-foreground font-medium">
+                                    <div className="w-4 flex justify-center text-xs font-bold text-muted-foreground">!</div>
+                                    <span>Prioridad</span>
+                                </div>
+                                <div>
+                                    <Select value={priority} onValueChange={(val: any) => setPriority(val)}>
+                                        <SelectTrigger className="h-8 w-[140px] text-xs">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="low">Baja</SelectItem>
+                                            <SelectItem value="medium">Media</SelectItem>
+                                            <SelectItem value="high">Alta</SelectItem>
+                                            <SelectItem value="urgent">Urgente</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <Separator className="" />
+
+                        {/* Assigned / Description Section */}
+                        <div className="space-y-4 px-6 md:px-0">
+                            <div className="flex items-center justify-between px-6">
+                                <h3 className="text-sm font-semibold text-foreground tracking-tight">Descripción</h3>
+                            </div>
+
+                            <div className="p-0 px-6">
+                                <Textarea
+                                    placeholder="Añadir descripción..."
+                                    className="min-h-[150px] resize-none bg-muted/30 border-border/50 focus-visible:ring-1 focus-visible:ring-ring"
+                                    value={description}
+                                    onChange={(e) => setDescription(e.target.value)}
+                                />
+                            </div>
+                        </div>
+                    </TabsContent>
+
+                    <TabsContent value="files" className="m-0 py-6 px-6 md:px-0">
+                        <div className="flex flex-col items-center justify-center py-12 text-muted-foreground border-2 border-dashed rounded-lg bg-muted/20 mx-6">
+                            <Paperclip className="w-10 h-10 mb-3 opacity-20" />
+                            <p className="text-sm font-medium text-foreground/70">No hay archivos adjuntos</p>
+                            <p className="text-xs opacity-60 font-medium">Arrastra archivos aquí para subirlos</p>
+                        </div>
+                    </TabsContent>
+                </div>
+            </Tabs>
 
             {/* Footer Actions */}
-            <div className="mt-auto border-t p-4 flex items-center justify-end gap-3 bg-muted/20">
+            <div className="mt-auto border-t p-4 flex items-center justify-end gap-3 bg-muted/20 shrink-0">
                 <Button variant="outline" size="sm" onClick={onCancel} disabled={isLoading}>
                     Cancelar
                 </Button>
