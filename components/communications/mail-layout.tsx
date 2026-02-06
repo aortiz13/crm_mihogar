@@ -15,8 +15,7 @@ import { useSearchParams } from "next/navigation"
 import { ComposeEmailModal } from "./compose-modal"
 import { Button } from "@/components/ui/button"
 
-import { Contact } from "@/lib/actions/contacts"
-import { Community } from "@/types"
+import { Contact, Community } from "@/types"
 
 export interface MailLayoutProps {
     children: React.ReactNode // Default Slot (or maybe List?)
