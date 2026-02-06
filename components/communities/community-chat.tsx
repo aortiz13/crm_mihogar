@@ -8,6 +8,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Bot, Send, User, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { chatWithCommunity } from '@/lib/actions/chat'
+import ReactMarkdown from 'react-markdown'
 
 export function CommunityChat({ communityId }: { communityId: string }) {
   const [messages, setMessages] = useState<{ role: 'user' | 'assistant'; content: string }[]>([
@@ -61,9 +62,18 @@ export function CommunityChat({ communityId }: { communityId: string }) {
                 </div>
                 <div className={cn(
                   "rounded-lg px-4 py-2 text-sm",
-                  msg.role === 'user' ? "bg-primary text-primary-foreground" : "bg-muted"
+                  msg.role === 'user' ? "bg-primary text-primary-foreground" : "bg-muted prose prose-sm dark:prose-invert"
                 )}>
-                  {msg.content}
+                  <ReactMarkdown
+                    components={{
+                      p: ({ children }) => <span className="block mb-1 last:mb-0">{children}</span>,
+                      strong: ({ children }) => <strong className="font-bold text-foreground">{children}</strong>,
+                      ul: ({ children }) => <ul className="list-disc ml-4 mb-2">{children}</ul>,
+                      li: ({ children }) => <li className="mb-1">{children}</li>
+                    }}
+                  >
+                    {msg.content}
+                  </ReactMarkdown>
                 </div>
               </div>
             ))}
