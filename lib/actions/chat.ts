@@ -58,11 +58,17 @@ export async function chatWithCommunity(communityId: string, messages: any[]) {
         })
 
         // 3. Start Chat
+        const mappedHistory = messages.slice(0, -1).map(m => ({
+            role: m.role === 'user' ? 'user' : 'model',
+            parts: [{ text: m.content || "" }]
+        }))
+
+        // Gemini requirement: History MUST start with 'user' role
+        const firstUserIndex = mappedHistory.findIndex(m => m.role === 'user')
+        const filteredHistory = firstUserIndex !== -1 ? mappedHistory.slice(firstUserIndex) : []
+
         const chat = model.startChat({
-            history: messages.slice(0, -1).map(m => ({
-                role: m.role === 'user' ? 'user' : 'model',
-                parts: [{ text: m.content || "" }]
-            }))
+            history: filteredHistory
         })
 
         const result = await chat.sendMessage(lastMessage)
