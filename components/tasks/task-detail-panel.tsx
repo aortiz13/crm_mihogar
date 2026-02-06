@@ -13,7 +13,9 @@ import {
     ArrowUpRight,
     UserCircle,
     Clock,
-    X
+    X,
+    Building2,
+    DoorClosed
 } from 'lucide-react'
 import { Separator } from '@/components/ui/separator'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -88,6 +90,36 @@ export function TaskDetailPanel({ task, onClose, className }: TaskDetailPanelPro
                                         )}
                                     </div>
                                 </div>
+
+                                <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                                    <div className="flex items-center gap-2 text-sm text-muted-foreground font-medium">
+                                        <Building2 className="w-4 h-4" />
+                                        <span>Condominio</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        {task.community ? (
+                                            <Badge variant="outline" className="bg-muted/50 text-foreground border-border hover:bg-muted px-2 py-0.5 rounded-md flex items-center gap-1.5 font-normal">
+                                                {task.community.name}
+                                            </Badge>
+                                        ) : (
+                                            <span className="text-sm text-muted-foreground italic font-normal text-muted-foreground/60">Sin condominio</span>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {task.unit && (
+                                    <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                                        <div className="flex items-center gap-2 text-sm text-muted-foreground font-medium">
+                                            <DoorClosed className="w-4 h-4" />
+                                            <span>Unidad</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <Badge variant="outline" className="bg-muted/50 text-foreground border-border hover:bg-muted px-2 py-0.5 rounded-md flex items-center gap-1.5 font-normal">
+                                                {task.unit.unit_number}
+                                            </Badge>
+                                        </div>
+                                    </div>
+                                )}
 
                                 <div className="grid grid-cols-[140px_1fr] items-center gap-4">
                                     <div className="flex items-center gap-2 text-sm text-muted-foreground font-medium">

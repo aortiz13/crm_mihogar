@@ -140,7 +140,7 @@ export function AppSidebar({ isAdmin, communities = [] }: { isAdmin?: boolean; c
                     <SidebarGroupLabel>Comunidades</SidebarGroupLabel>
                     <SidebarGroupContent>
                         <SidebarMenu>
-                            {communities.map((community) => (
+                            {communities.slice(0, 3).map((community) => (
                                 <SidebarMenuItem key={community.id}>
                                     <SidebarMenuButton asChild tooltip={community.name}>
                                         <Link href={`/dashboard/communities/${community.id}`}>

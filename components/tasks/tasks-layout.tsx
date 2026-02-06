@@ -4,7 +4,7 @@ import React from 'react'
 import { Board } from '@/components/tasks/board'
 import { CreateTaskForm } from '@/components/tasks/create-task-form'
 import { TaskDetailPanel } from '@/components/tasks/task-detail-panel'
-import { Task, Contact } from '@/types'
+import { Task, Contact, Community } from '@/types'
 import { Button } from '@/components/ui/button'
 import { Plus } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -12,9 +12,10 @@ import { cn } from '@/lib/utils'
 interface TasksLayoutProps {
     initialTasks: Task[]
     contacts: Contact[]
+    communities: Community[]
 }
 
-export function TasksLayout({ initialTasks, contacts }: TasksLayoutProps) {
+export function TasksLayout({ initialTasks, contacts, communities }: TasksLayoutProps) {
     const [isCreating, setIsCreating] = React.useState(false)
     const [selectedTask, setSelectedTask] = React.useState<Task | null>(null)
 
@@ -36,7 +37,7 @@ export function TasksLayout({ initialTasks, contacts }: TasksLayoutProps) {
     const isPanelOpen = isCreating || !!selectedTask
 
     return (
-        <div className="flex h-[calc(100vh-theme(spacing.16))] flex-col">
+        <div className="flex h-[calc(100vh-6rem)] flex-col">
             <div className="flex items-center justify-between px-4 py-4 border-b">
                 <div>
                     <h1 className="text-2xl font-bold tracking-tight">Tablero de Tareas</h1>
@@ -60,6 +61,7 @@ export function TasksLayout({ initialTasks, contacts }: TasksLayoutProps) {
                         {isCreating && (
                             <CreateTaskForm
                                 contacts={contacts}
+                                communities={communities}
                                 onCancel={closePanel}
                                 onCreate={() => {
                                     closePanel()

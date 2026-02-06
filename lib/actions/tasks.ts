@@ -14,7 +14,9 @@ export async function getTasks(): Promise<Task[]> {
             *,
             contact:contacts(id, full_name),
             assignee:profiles!assigned_to(id, full_name, email),
-            creator:profiles!created_by(id, full_name, email)
+            creator:profiles!created_by(id, full_name, email),
+            community:communities(id, name),
+            unit:units(id, unit_number)
         `)
         .order('created_at', { ascending: false })
 
@@ -66,6 +68,7 @@ export async function createTask(formData: FormData) {
     const due_date = formData.get('due_date') as string
     const community_id = formData.get('community_id') as string
     const contact_id = formData.get('contact_id') as string
+    const unit_id = formData.get('unit_id') ? parseInt(formData.get('unit_id') as string) : null
 
     const { data: { user } } = await supabase.auth.getUser()
 
@@ -84,6 +87,7 @@ export async function createTask(formData: FormData) {
         due_date: due_date || null,
         community_id: community_id || null,
         contact_id: contact_id || null,
+        unit_id: unit_id,
         created_by: created_by
     })
 

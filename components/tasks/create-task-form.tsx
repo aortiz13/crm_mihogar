@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Badge } from '@/components/ui/badge'
 import {
     Calendar as CalendarIcon,
@@ -10,7 +10,9 @@ import {
     UserCircle,
     Clock,
     Loader2,
-    X
+    X,
+    Building2,
+    DoorClosed
 } from 'lucide-react'
 import { Separator } from '@/components/ui/separator'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -25,24 +27,49 @@ import {
     SelectValue,
 } from '@/components/ui/select'
 import { cn } from '@/lib/utils'
-import { Contact } from '@/types'
+import { Contact, Community, Unit } from '@/types'
 import { createTask } from '@/lib/actions/tasks'
+import { getUnits } from '@/lib/actions/units'
 
 interface CreateTaskFormProps {
     contacts: Contact[]
+    communities: Community[]
     onCancel: () => void
     onCreate?: () => void
     className?: string
 }
 
-export function CreateTaskForm({ contacts, onCancel, onCreate, className }: CreateTaskFormProps) {
+export function CreateTaskForm({ contacts, communities, onCancel, onCreate, className }: CreateTaskFormProps) {
     const [isLoading, setIsLoading] = useState(false)
     const [title, setTitle] = useState('')
     const [description, setDescription] = useState('')
     const [status, setStatus] = useState<'todo' | 'in_progress' | 'done'>('todo')
     const [priority, setPriority] = useState<'low' | 'medium' | 'high' | 'urgent'>('medium')
     const [date, setDate] = useState<string>('')
-    const [selectedContactId, setSelectedContactId] = useState<string>('')
+    const [selectedContactId, setSelectedContactId] = useState<string>('none')
+    const [selectedCommunityId, setSelectedCommunityId] = useState<string>('none')
+    const [selectedUnitId, setSelectedUnitId] = useState<string>('none')
+    const [units, setUnits] = useState<Unit[]>([])
+    const [isLoadingUnits, setIsLoadingUnits] = useState(false)
+
+    useEffect(() => {
+        const fetchUnits = async () => {
+            if (selectedCommunityId && selectedCommunityId !== 'none') {
+                setIsLoadingUnits(true)
+                const result = await getUnits(selectedCommunityId)
+                if (result.data) {
+                    setUnits(result.data)
+                }
+                setIsLoadingUnits(false)
+            } else {
+                setUnits([])
+            }
+            setSelectedUnitId('none')
+        }
+
+        fetchUnits()
+    }, [selectedCommunityId])
+
 
     const handleSubmit = async () => {
         if (!title.trim()) {
@@ -57,7 +84,9 @@ export function CreateTaskForm({ contacts, onCancel, onCreate, className }: Crea
         formData.append('status', status)
         formData.append('priority', priority)
         if (date) formData.append('due_date', new Date(date).toISOString())
-        if (selectedContactId) formData.append('contact_id', selectedContactId)
+        if (selectedContactId && selectedContactId !== 'none') formData.append('contact_id', selectedContactId)
+        if (selectedCommunityId && selectedCommunityId !== 'none') formData.append('community_id', selectedCommunityId)
+        if (selectedUnitId && selectedUnitId !== 'none') formData.append('unit_id', selectedUnitId)
 
         const result = await createTask(formData)
         setIsLoading(false)
@@ -76,7 +105,9 @@ export function CreateTaskForm({ contacts, onCancel, onCreate, className }: Crea
         setStatus('todo')
         setPriority('medium')
         setDate('')
-        setSelectedContactId('')
+        setSelectedContactId('none')
+        setSelectedCommunityId('none')
+        setSelectedUnitId('none')
     }
 
     return (
@@ -134,6 +165,7 @@ export function CreateTaskForm({ contacts, onCancel, onCreate, className }: Crea
                                                 <SelectValue placeholder="Seleccionar contacto" />
                                             </SelectTrigger>
                                             <SelectContent>
+                                                <SelectItem value="none">Sin contacto</SelectItem>
                                                 {contacts.map((contact) => (
                                                     <SelectItem key={contact.id} value={contact.id}>
                                                         {contact.full_name}
@@ -143,6 +175,59 @@ export function CreateTaskForm({ contacts, onCancel, onCreate, className }: Crea
                                         </Select>
                                     </div>
                                 </div>
+
+                                {/* Community */}
+                                <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                                    <div className="flex items-center gap-2 text-sm text-muted-foreground font-medium">
+                                        <Building2 className="w-4 h-4" />
+                                        <span>Condominio</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <Select value={selectedCommunityId} onValueChange={setSelectedCommunityId}>
+                                            <SelectTrigger className="h-8 w-fit min-w-[140px] text-xs">
+                                                <SelectValue placeholder="Seleccionar condominio" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="none">Sin condominio</SelectItem>
+                                                {communities.map((community) => (
+                                                    <SelectItem key={community.id} value={community.id}>
+                                                        {community.name}
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                </div>
+
+                                {/* Unit */}
+                                {selectedCommunityId !== 'none' && (
+                                    <div className="grid grid-cols-[140px_1fr] items-center gap-4">
+                                        <div className="flex items-center gap-2 text-sm text-muted-foreground font-medium">
+                                            <DoorClosed className="w-4 h-4" />
+                                            <span>Unidad</span>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <Select
+                                                value={selectedUnitId}
+                                                onValueChange={setSelectedUnitId}
+                                                disabled={isLoadingUnits}
+                                            >
+                                                <SelectTrigger className="h-8 w-fit min-w-[140px] text-xs">
+                                                    <SelectValue placeholder={isLoadingUnits ? "Cargando..." : "Seleccionar unidad"} />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="none">Sin unidad</SelectItem>
+                                                    {units.map((unit) => (
+                                                        <SelectItem key={unit.id} value={unit.id.toString()}>
+                                                            {unit.unit_number}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                    </div>
+                                )}
+
 
                                 {/* Creado Por (Static for now) */}
                                 <div className="grid grid-cols-[140px_1fr] items-center gap-4">

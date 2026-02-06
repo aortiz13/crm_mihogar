@@ -68,6 +68,7 @@ export interface Task {
     communication_id: string | null
     community_id: string | null
     contact_id: string | null
+    unit_id?: number | null
     created_by: string | null
     created_at: string
     // Joined relations (optional for display)
@@ -84,6 +85,14 @@ export interface Task {
         id: string
         full_name: string | null
         email: string
+    }
+    community?: {
+        id: string
+        name: string
+    }
+    unit?: {
+        id: number
+        unit_number: string
     }
 }
 
