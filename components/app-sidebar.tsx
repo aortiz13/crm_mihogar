@@ -24,7 +24,8 @@ import {
     ChevronsUpDown,
     Search,
     Bell,
-    LayoutGrid
+    LayoutGrid,
+    Map
 } from "lucide-react"
 import Link from "next/link"
 import { signOut } from "@/lib/actions/auth"
@@ -62,6 +63,11 @@ const objectsNav = [
         title: "Personas",
         url: "/dashboard/contactos",
         icon: Users,
+    },
+    {
+        title: "Mapa de Clientes",
+        url: "/dashboard/mapa",
+        icon: Map,
     },
     {
         title: "Documentos",

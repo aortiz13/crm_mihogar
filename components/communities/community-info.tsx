@@ -6,7 +6,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
-import { updateCommunityBankData } from '@/lib/actions/communities'
+import { updateCommunityBankData, updateCommunity } from '@/lib/actions/communities'
+import { AddressAutocomplete } from '@/components/ui/address-autocomplete'
 import { toast } from 'sonner'
 
 interface CommunityInfoProps {
@@ -22,6 +23,26 @@ export function CommunityInfo({ community }: CommunityInfoProps) {
         rut: '',
         email: ''
     })
+    const [generalData, setGeneralData] = useState({
+        name: community.name,
+        address: community.address || '',
+        latitude: community.latitude,
+        longitude: community.longitude,
+        unit_count: community.unit_count,
+        onedrive_folder_id: community.onedrive_folder_id
+    })
+
+    const handleSaveGeneral = async () => {
+        setLoading(true)
+        const result = await updateCommunity(community.id, generalData)
+        setLoading(false)
+
+        if (result.error) {
+            toast.error('Error al guardar: ' + result.error)
+        } else {
+            toast.success('Información actualizada correctamente')
+        }
+    }
 
     const handleSaveBankData = async () => {
         setLoading(true)
@@ -46,32 +67,48 @@ export function CommunityInfo({ community }: CommunityInfoProps) {
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <Label htmlFor="name">Nombre de la Comunidad</Label>
-                            <Input id="name" defaultValue={community.name} />
+                            <Input
+                                id="name"
+                                value={generalData.name}
+                                onChange={(e) => setGeneralData({ ...generalData, name: e.target.value })}
+                            />
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="address">Dirección</Label>
-                            <Input id="address" defaultValue={community.address || ''} />
+                            <Label htmlFor="address">Dirección (Validada)</Label>
+                            <AddressAutocomplete
+                                defaultValue={generalData.address}
+                                onSelect={(address, lat, lon) => setGeneralData({
+                                    ...generalData,
+                                    address,
+                                    latitude: lat,
+                                    longitude: lon
+                                })}
+                            />
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="units">Unidades Totales</Label>
-                            <Input id="units" type="number" defaultValue={community.unit_count || ''} />
+                            <Input
+                                id="units"
+                                type="number"
+                                value={generalData.unit_count || ''}
+                                onChange={(e) => setGeneralData({ ...generalData, unit_count: parseInt(e.target.value) })}
+                            />
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="onedrive">ID Carpeta OneDrive</Label>
-                            <Input id="onedrive" defaultValue={community.onedrive_folder_id || ''} placeholder="Opcional" />
-                        </div>
-                    </div>
-
-                    <div className="space-y-2">
-                        <Label>Información de Contacto</Label>
-                        <div className="grid grid-cols-2 gap-4">
-                            <Input placeholder="Email de contacto" defaultValue={community.contact_info?.email || ''} />
-                            <Input placeholder="Teléfono" defaultValue={community.contact_info?.phone || ''} />
+                            <Input
+                                id="onedrive"
+                                value={generalData.onedrive_folder_id || ''}
+                                onChange={(e) => setGeneralData({ ...generalData, onedrive_folder_id: e.target.value })}
+                                placeholder="Opcional"
+                            />
                         </div>
                     </div>
 
                     <div className="flex justify-end">
-                        <Button variant="outline">Guardar Cambios General</Button>
+                        <Button variant="outline" onClick={handleSaveGeneral} disabled={loading}>
+                            {loading ? 'Guardando...' : 'Guardar Información General'}
+                        </Button>
                     </div>
                 </CardContent>
             </Card>

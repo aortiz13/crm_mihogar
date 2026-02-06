@@ -15,6 +15,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { createCommunity } from '@/lib/actions/communities'
 import { Plus } from 'lucide-react'
+import { AddressAutocomplete } from '@/components/ui/address-autocomplete'
 
 export function CreateCommunityDialog() {
     const [open, setOpen] = useState(false)
@@ -48,7 +49,7 @@ export function CreateCommunityDialog() {
                         Ingrese los detalles de la nueva comunidad o edificio.
                     </DialogDescription>
                 </DialogHeader>
-                <form action={handleSubmit}>
+                <form action={handleSubmit} id="create-community-form">
                     <div className="grid gap-4 py-4">
                         <div className="grid grid-cols-4 items-center gap-4">
                             <Label htmlFor="name" className="text-right">
@@ -65,11 +66,21 @@ export function CreateCommunityDialog() {
                             <Label htmlFor="address" className="text-right">
                                 Dirección
                             </Label>
-                            <Input
-                                id="address"
-                                name="address"
-                                className="col-span-3"
-                            />
+                            <div className="col-span-3">
+                                <AddressAutocomplete
+                                    onSelect={(address, lat, lon) => {
+                                        const form = document.getElementById('create-community-form') as HTMLFormElement
+                                        if (form) {
+                                            (form.elements.namedItem('address') as HTMLInputElement).value = address;
+                                            (form.elements.namedItem('latitude') as HTMLInputElement).value = lat.toString();
+                                            (form.elements.namedItem('longitude') as HTMLInputElement).value = lon.toString();
+                                        }
+                                    }}
+                                />
+                                <input type="hidden" name="address" required />
+                                <input type="hidden" name="latitude" />
+                                <input type="hidden" name="longitude" />
+                            </div>
                         </div>
                         <div className="grid grid-cols-4 items-center gap-4">
                             <Label htmlFor="unit_count" className="text-right">

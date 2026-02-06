@@ -19,6 +19,8 @@ export interface Community {
     smtp_user?: string | null
     smtp_pass?: string | null
     gmail_access_token?: string | null
+    latitude?: number | null
+    longitude?: number | null
 }
 
 export interface Activity {
