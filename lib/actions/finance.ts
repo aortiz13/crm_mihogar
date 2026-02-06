@@ -200,3 +200,34 @@ export async function getBillByUnit(communityId: string, unitNumber: string, mon
     if (error) return { error: error.message }
     return { data: details }
 }
+
+export async function deleteFinancePeriod(periodId: number, communityId: string) {
+    const supabase = await createClient()
+
+    // 1. Delete charge details
+    const { error: chargeError } = await supabase
+        .from('finance_charge_details')
+        .delete()
+        .eq('period_id', periodId)
+
+    if (chargeError) return { error: chargeError.message }
+
+    // 2. Delete expenses
+    const { error: expenseError } = await supabase
+        .from('finance_expenses')
+        .delete()
+        .eq('period_id', periodId)
+
+    if (expenseError) return { error: expenseError.message }
+
+    // 3. Delete the period itself
+    const { error: periodError } = await supabase
+        .from('finance_periods')
+        .delete()
+        .eq('id', periodId)
+
+    if (periodError) return { error: periodError.message }
+
+    revalidatePath(`/dashboard/communities/${communityId}`)
+    return { success: true }
+}

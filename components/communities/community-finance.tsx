@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from 'react'
 import { FinancePeriod } from '@/types'
-import { getFinancePeriods, createFinancePeriod } from '@/lib/actions/finance'
+import { getFinancePeriods, createFinancePeriod, deleteFinancePeriod } from '@/lib/actions/finance'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Plus, Table as TableIcon, FileUp, Loader2, AlertCircle } from 'lucide-react'
+import { Plus, Table as TableIcon, FileUp, Loader2, AlertCircle, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import {
     Dialog,
@@ -48,6 +48,7 @@ export function CommunityFinance({ communityId }: CommunityFinanceProps) {
     const [isCreateOpen, setIsCreateOpen] = useState(false)
     const [newMonth, setNewMonth] = useState<string>(String(new Date().getMonth() + 1))
     const [newYear, setNewYear] = useState<string>(String(new Date().getFullYear()))
+    const [isDeleting, setIsDeleting] = useState<number | null>(null)
 
     useEffect(() => {
         loadPeriods()
@@ -67,6 +68,17 @@ export function CommunityFinance({ communityId }: CommunityFinanceProps) {
         } else {
             toast.success('Periodo creado correctamente')
             setIsCreateOpen(false)
+            loadPeriods()
+        }
+    }
+
+    async function handleDeletePeriod(periodId: number) {
+        const res = await deleteFinancePeriod(periodId, communityId)
+        if (res.error) {
+            toast.error(res.error)
+        } else {
+            toast.success('Periodo eliminado')
+            setIsDeleting(null)
             loadPeriods()
         }
     }
@@ -177,6 +189,26 @@ export function CommunityFinance({ communityId }: CommunityFinanceProps) {
                                             <Button variant="ghost" size="sm">
                                                 <TableIcon className="h-4 w-4" />
                                             </Button>
+
+                                            <Dialog open={isDeleting === p.id} onOpenChange={(open) => setIsDeleting(open ? p.id : null)}>
+                                                <DialogTrigger asChild>
+                                                    <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive hover:bg-destructive/10">
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </Button>
+                                                </DialogTrigger>
+                                                <DialogContent>
+                                                    <DialogHeader>
+                                                        <DialogTitle>¿Eliminar periodo?</DialogTitle>
+                                                        <DialogDescription>
+                                                            Esta acción eliminará todos los cobros y egresos asociados a {MONTHS[p.month - 1]} {p.year}. Esta acción no se puede deshacer.
+                                                        </DialogDescription>
+                                                    </DialogHeader>
+                                                    <DialogFooter>
+                                                        <Button variant="outline" onClick={() => setIsDeleting(null)}>Cancelar</Button>
+                                                        <Button variant="destructive" onClick={() => handleDeletePeriod(p.id)}>Eliminar definitivamente</Button>
+                                                    </DialogFooter>
+                                                </DialogContent>
+                                            </Dialog>
                                         </TableCell>
                                     </TableRow>
                                 ))
