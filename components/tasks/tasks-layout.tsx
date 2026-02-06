@@ -7,6 +7,7 @@ import { TaskDetailPanel } from '@/components/tasks/task-detail-panel'
 import { Task, Contact, Community } from '@/types'
 import { Button } from '@/components/ui/button'
 import { Plus } from 'lucide-react'
+import { Dialog, DialogContent } from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
 
 interface TasksLayoutProps {
@@ -20,21 +21,22 @@ export function TasksLayout({ initialTasks, contacts, communities }: TasksLayout
     const [selectedTask, setSelectedTask] = React.useState<Task | null>(null)
 
     const handleCreateClick = () => {
-        setSelectedTask(null)
+        // setSelectedTask(null) // Optional: decide if we want to close main detail view or not. User didn't specify. Keeping detail view open seems fine if it's a popup. 
         setIsCreating(true)
     }
 
     const handleTaskClick = (task: Task) => {
-        setIsCreating(false)
+        // setIsCreating(false) // No longer mutually exclusive
         setSelectedTask(task)
     }
 
-    const closePanel = () => {
-        setIsCreating(false)
+    const closeDetail = () => {
         setSelectedTask(null)
     }
 
-    const isPanelOpen = isCreating || !!selectedTask
+    const closeCreate = () => {
+        setIsCreating(false)
+    }
 
     return (
         <div className="flex h-[calc(100vh-6rem)] flex-col">
@@ -43,7 +45,7 @@ export function TasksLayout({ initialTasks, contacts, communities }: TasksLayout
                     <h1 className="text-2xl font-bold tracking-tight">Tablero de Tareas</h1>
                     <p className="text-muted-foreground">Gestione las tareas y solicitudes.</p>
                 </div>
-                <Button onClick={handleCreateClick} disabled={isCreating} className="gap-2">
+                <Button onClick={handleCreateClick} className="gap-2">
                     <Plus className="h-4 w-4" />
                     Nueva Tarea
                 </Button>
@@ -55,31 +57,33 @@ export function TasksLayout({ initialTasks, contacts, communities }: TasksLayout
                     <Board initialTasks={initialTasks} onTaskClick={handleTaskClick} />
                 </div>
 
-                {/* Right Panel - Static / Solid */}
-                {isPanelOpen && (
+                {/* Right Panel - Static / Solid -> Only for Details now */}
+                {selectedTask && (
                     <div className="w-[400px] sm:w-[500px] bg-background border-l overflow-y-auto shrink-0 transition-all duration-300">
-                        {isCreating && (
-                            <CreateTaskForm
-                                contacts={contacts}
-                                communities={communities}
-                                onCancel={closePanel}
-                                onCreate={() => {
-                                    closePanel()
-                                    // Rely on server action revalidation
-                                }}
-                                className="h-full border-none shadow-none"
-                            />
-                        )}
-                        {selectedTask && (
-                            <TaskDetailPanel
-                                task={selectedTask}
-                                onClose={closePanel}
-                                className="h-full border-none shadow-none"
-                            />
-                        )}
+                        <TaskDetailPanel
+                            task={selectedTask}
+                            onClose={closeDetail}
+                            className="h-full border-none shadow-none"
+                        />
                     </div>
                 )}
             </div>
+
+            {/* Create Task Popup */}
+            <Dialog open={isCreating} onOpenChange={setIsCreating}>
+                <DialogContent className="max-w-4xl p-0 h-[85vh] overflow-hidden flex flex-col gap-0 border-none sm:rounded-xl">
+                    <CreateTaskForm
+                        contacts={contacts}
+                        communities={communities}
+                        onCancel={closeCreate}
+                        onCreate={() => {
+                            closeCreate()
+                            // Rely on server action revalidation
+                        }}
+                        className="h-full border-none shadow-none rounded-none"
+                    />
+                </DialogContent>
+            </Dialog>
         </div>
     )
 }
