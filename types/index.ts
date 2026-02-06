@@ -107,3 +107,43 @@ export interface ContactNote {
     content: string
     created_at: string
 }
+
+export interface Unit {
+    id: number
+    community_id: string
+    unit_number: string
+    resident_email: string | null
+    created_at: string
+}
+
+export interface FinancePeriod {
+    id: number
+    community_id: string
+    month: number
+    year: number
+    status: 'OPEN' | 'CLOSED' | 'AUDIT'
+    total_billed: number | null
+    total_expenses: number | null
+    created_at: string
+}
+
+export interface FinanceExpense {
+    id: number
+    period_id: number
+    provider_name: string | null
+    category: string | null
+    description: string | null
+    amount: number
+    transaction_date: string | null
+    document_number: string | null
+}
+
+export interface FinanceChargeDetail {
+    id: number
+    period_id: number
+    unit_id: number
+    concept_name: string
+    amount: number
+    concept_type: 'GASTO_COMUN_BASE' | 'CONSUMO_INDIVIDUAL' | 'MULTA' | 'FONDO' | 'VARIABLE'
+    source_column: string | null
+}
