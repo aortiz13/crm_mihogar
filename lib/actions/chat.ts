@@ -4,7 +4,7 @@ import { searchCommunityContext } from '@/lib/ai/rag'
 import { getGemini, CHAT_MODEL } from '@/lib/gemini'
 import { SchemaType } from '@google/generative-ai'
 import { createActivity } from './activities'
-import { getResidentBill } from './finance'
+import { getResidentBill, getBillByUnit } from './finance'
 
 export async function chatWithCommunity(communityId: string, messages: any[]) {
     const lastMessage = messages[messages.length - 1].content
@@ -15,14 +15,14 @@ export async function chatWithCommunity(communityId: string, messages: any[]) {
         ? contextDocs.map((d: any) => d.content_chunk).join('\n---\n')
         : "No se encontraron documentos relevantes en la base de conocimiento."
 
-    const systemPrompt = `Eres un asistente experto en administración de comunidades. 
+    const systemPrompt = `Eres un asistente experto en administración de comunidades (Uso Interno). 
     Tienes acceso a dos fuentes de información:
     1. Base de conocimiento: Documentos subidos por la administración (reglamentos, actas, etc).
-    2. Información Financiera: Puedes consultar boletas de residentes si te proporcionan su email y el mes/año deseado.
+    2. Información Financiera: Puedes consultar boletas de residentes proporcionando su email O su número de unidad.
     
     Reglas:
-    - Si el usuario pregunta por su cuenta o boleta, usa la función 'get_resident_bill_details'.
-    - Si no tienes el email, el mes o el año, PÍDELOS amablemente antes de intentar usar la función.
+    - Esta es una herramienta interna, puedes dar datos si te dan el número de unidad (ej: "unidad 102").
+    - Siempre pide el mes y año si no los tienes.
     - El mes debe ser un número del 1 al 12.
     - Responde de forma clara y profesional.
     
@@ -38,15 +38,16 @@ export async function chatWithCommunity(communityId: string, messages: any[]) {
                 functionDeclarations: [
                     {
                         name: "get_resident_bill_details",
-                        description: "Obtiene el desglose detallado de la boleta de un residente para un mes específico.",
+                        description: "Obtiene el desglose detallado de la boleta de un residente.",
                         parameters: {
                             type: SchemaType.OBJECT,
                             properties: {
-                                resident_email: { type: SchemaType.STRING, description: "Email registrado del residente" },
+                                resident_email: { type: SchemaType.STRING, description: "Email del residente (opcional)" },
+                                unit_number: { type: SchemaType.STRING, description: "Número de unidad/depto (opcional)" },
                                 month: { type: SchemaType.NUMBER, description: "Mes de la boleta (1-12)" },
                                 year: { type: SchemaType.NUMBER, description: "Año de la boleta (ej: 2025)" }
                             },
-                            required: ["resident_email", "month", "year"]
+                            required: ["month", "year"]
                         }
                     }
                 ]
@@ -57,12 +58,12 @@ export async function chatWithCommunity(communityId: string, messages: any[]) {
 
     // 3. Start Chat and handle interaction
     // Convert OpenAI style messages to Gemini style
-    const history = messages.slice(0, -1).map(m => ({
-        role: m.role === 'user' ? 'user' : 'model',
-        parts: [{ text: m.content }]
-    }))
-
-    const chat = model.startChat({ history })
+    const chat = model.startChat({
+        history: messages.slice(0, -1).map(m => ({
+            role: m.role === 'user' ? 'user' : 'model',
+            parts: [{ text: m.content || "" }]
+        }))
+    })
     const result = await chat.sendMessage(lastMessage)
     const response = result.response
     const calls = response.functionCalls()
@@ -72,13 +73,20 @@ export async function chatWithCommunity(communityId: string, messages: any[]) {
 
     // 4. Handle Function Calls
     if (calls && calls.length > 0) {
-        usedFunctions = calls.map(c => c.name)
         const toolResponses = []
 
         for (const call of calls) {
             if (call.name === 'get_resident_bill_details') {
                 const args = call.args as any
-                const billData = await getResidentBill(args.resident_email, args.month, args.year)
+                let billData;
+
+                if (args.unit_number) {
+                    billData = await getBillByUnit(communityId, args.unit_number, args.month, args.year)
+                } else if (args.resident_email) {
+                    billData = await getResidentBill(args.resident_email, args.month, args.year)
+                } else {
+                    billData = { error: "Debes proporcionar un email o número de unidad" }
+                }
 
                 toolResponses.push({
                     functionResponse: {
@@ -89,7 +97,6 @@ export async function chatWithCommunity(communityId: string, messages: any[]) {
             }
         }
 
-        // Send tool responses back to Gemini
         const secondResult = await chat.sendMessage(toolResponses)
         finalResponse = secondResult.response.text()
     }
