@@ -1,12 +1,11 @@
-import { getOpenAI } from '@/lib/openai'
+import { getGemini, EMBEDDING_MODEL } from '@/lib/gemini'
 import { createClient } from '@/lib/supabase/server'
 
 export async function generateEmbedding(text: string) {
-    const response = await getOpenAI().embeddings.create({
-        model: 'text-embedding-3-small',
-        input: text.replace(/\n/g, ' '),
-    })
-    return response.data[0].embedding
+    const genAI = getGemini()
+    const model = genAI.getGenerativeModel({ model: EMBEDDING_MODEL })
+    const result = await model.embedContent(text.replace(/\n/g, ' '))
+    return result.embedding.values
 }
 
 export async function processDocument(communityId: string, documentId: string, content: string) {

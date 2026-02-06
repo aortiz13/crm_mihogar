@@ -1,7 +1,7 @@
 'use server'
 
 import { searchCommunityContext } from '@/lib/ai/rag'
-import { getOpenAI } from '@/lib/openai'
+import { getGemini, CHAT_MODEL } from '@/lib/gemini'
 import { createActivity } from './activities'
 import { getResidentBill } from './finance'
 
@@ -20,85 +20,88 @@ export async function chatWithCommunity(communityId: string, messages: any[]) {
     2. Información Financiera: Puedes consultar boletas de residentes si te proporcionan su email y el mes/año deseado.
     
     Reglas:
-    - Si el usuario pregunta por su cuenta o boleta, usa la herramienta 'get_resident_bill_details'.
-    - Si no tienes el email, el mes o el año, PÍDELOS amablemente antes de intentar usar la herramienta.
+    - Si el usuario pregunta por su cuenta o boleta, usa la función 'get_resident_bill_details'.
+    - Si no tienes el email, el mes o el año, PÍDELOS amablemente antes de intentar usar la función.
     - El mes debe ser un número del 1 al 12.
     - Responde de forma clara y profesional.
     
     Contexto de Guía:
     ${contextText}`
 
-    const tools: any[] = [
-        {
-            type: "function",
-            function: {
-                name: "get_resident_bill_details",
-                description: "Obtiene el desglose detallado de la boleta de un residente para un mes específico.",
-                parameters: {
-                    type: "object",
-                    properties: {
-                        resident_email: { type: "string", description: "Email registrado del residente" },
-                        month: { type: "integer", description: "Mes de la boleta (1-12)" },
-                        year: { type: "integer", description: "Año de la boleta (ej: 2025)" }
-                    },
-                    required: ["resident_email", "month", "year"]
-                }
+    // 2. Setup Gemini Model with Tools
+    const genAI = getGemini()
+    const model = genAI.getGenerativeModel({
+        model: CHAT_MODEL,
+        tools: [
+            {
+                functionDeclarations: [
+                    {
+                        name: "get_resident_bill_details",
+                        description: "Obtiene el desglose detallado de la boleta de un residente para un mes específico.",
+                        parameters: {
+                            type: "OBJECT",
+                            properties: {
+                                resident_email: { type: "STRING", description: "Email registrado del residente" },
+                                month: { type: "NUMBER", description: "Mes de la boleta (1-12)" },
+                                year: { type: "NUMBER", description: "Año de la boleta (ej: 2025)" }
+                            },
+                            required: ["resident_email", "month", "year"]
+                        }
+                    }
+                ]
             }
-        }
-    ]
-
-    // 2. Initial Call to AI
-    const openai = getOpenAI()
-    const runner = await openai.chat.completions.create({
-        model: 'gpt-4o', // Using a better model for tools
-        messages: [
-            { role: 'system', content: systemPrompt },
-            ...messages
         ],
-        tools
+        systemInstruction: systemPrompt
     })
 
-    let finalResponse = runner.choices[0].message.content
-    const toolCalls = runner.choices[0].message.tool_calls
+    // 3. Start Chat and handle interaction
+    // Convert OpenAI style messages to Gemini style
+    const history = messages.slice(0, -1).map(m => ({
+        role: m.role === 'user' ? 'user' : 'model',
+        parts: [{ text: m.content }]
+    }))
 
-    // 3. Handle Tool Calls
-    if (toolCalls && toolCalls.length > 0) {
-        const toolMessages = [...messages]
-        toolMessages.push(runner.choices[0].message)
+    const chat = model.startChat({ history })
+    const result = await chat.sendMessage(lastMessage)
+    const response = result.response
+    const calls = response.functionCalls()
 
-        for (const toolCall of toolCalls) {
-            const tc = toolCall as any
-            if (tc.function?.name === 'get_resident_bill_details') {
-                const args = JSON.parse(tc.function.arguments)
+    let finalResponse = response.text()
+    let usedFunctions: string[] = []
+
+    // 4. Handle Function Calls
+    if (calls && calls.length > 0) {
+        usedFunctions = calls.map(c => c.name)
+        const toolResponses = []
+
+        for (const call of calls) {
+            if (call.name === 'get_resident_bill_details') {
+                const args = call.args as any
                 const billData = await getResidentBill(args.resident_email, args.month, args.year)
 
-                toolMessages.push({
-                    role: "tool",
-                    tool_call_id: tc.id,
-                    content: JSON.stringify(billData)
+                toolResponses.push({
+                    functionResponse: {
+                        name: 'get_resident_bill_details',
+                        response: { content: JSON.stringify(billData) }
+                    }
                 })
             }
         }
 
-        const secondResponse = await openai.chat.completions.create({
-            model: 'gpt-4o',
-            messages: [
-                { role: 'system', content: systemPrompt },
-                ...toolMessages
-            ]
-        })
-        finalResponse = secondResponse.choices[0].message.content
+        // Send tool responses back to Gemini
+        const secondResult = await chat.sendMessage(toolResponses)
+        finalResponse = secondResult.response.text()
     }
 
-    // 4. Log Activity
+    // 5. Log Activity
     await createActivity({
         type: 'ai_log',
         community_id: communityId,
         contact_id: null,
-        title: 'Asistente IA respondió (Finanzas)',
-        description: `IA procesó consulta sobre: "${lastMessage.substring(0, 50)}..."`,
+        title: 'Asistente IA Gemini respondió',
+        description: `IA (Google) procesó consulta sobre: "${lastMessage.substring(0, 50)}..."`,
         metadata: {
-            used_tools: toolCalls?.map((t: any) => t.function?.name) || [],
+            used_tools: usedFunctions,
             context_docs_count: contextDocs?.length || 0
         }
     })
