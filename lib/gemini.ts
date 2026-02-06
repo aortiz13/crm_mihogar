@@ -15,4 +15,4 @@ export function getGemini() {
 }
 
 export const EMBEDDING_MODEL = 'gemini-embedding-001'
-export const CHAT_MODEL = 'gemini-1.5-flash-latest'
+export const CHAT_MODEL = 'gemini-2.5-flash'
