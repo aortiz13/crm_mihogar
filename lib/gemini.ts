@@ -14,5 +14,5 @@ export function getGemini() {
     return genAIInstance
 }
 
-export const EMBEDDING_MODEL = 'text-embedding-004'
+export const EMBEDDING_MODEL = 'gemini-embedding-001'
 export const CHAT_MODEL = 'gemini-1.5-flash'
