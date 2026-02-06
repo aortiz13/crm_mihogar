@@ -45,12 +45,22 @@ export async function createCommunity(formData: FormData) {
     const address = formData.get('address') as string
     const unit_count = formData.get('unit_count') ? parseInt(formData.get('unit_count') as string) : null
 
+    // Parse bank data if present (for future-proofing, though not in the simple form yet)
+    const bank_data = {
+        bank_name: formData.get('bank_name') as string || '',
+        account_type: formData.get('account_type') as string || '',
+        account_number: formData.get('account_number') as string || '',
+        rut: formData.get('rut') as string || '',
+        email: formData.get('bank_email') as string || '',
+    }
+
     const { error } = await supabase
         .from('communities')
         .insert({
             name,
             address,
             unit_count,
+            bank_data
         })
 
     if (error) {
@@ -58,6 +68,24 @@ export async function createCommunity(formData: FormData) {
     }
 
     revalidatePath('/dashboard/communities')
+    return { success: true }
+}
+
+export async function updateCommunityBankData(id: string, bankData: any) {
+    const supabase = await createClient()
+
+    const { error } = await supabase
+        .from('communities')
+        .update({
+            bank_data: bankData
+        })
+        .eq('id', id)
+
+    if (error) {
+        return { error: error.message }
+    }
+
+    revalidatePath(`/dashboard/communities/${id}`)
     return { success: true }
 }
 

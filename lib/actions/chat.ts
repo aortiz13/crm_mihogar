@@ -2,6 +2,7 @@
 
 import { searchCommunityContext } from '@/lib/ai/rag'
 import { getOpenAI } from '@/lib/openai'
+import { createActivity } from './activities'
 
 export async function chatWithCommunity(communityId: string, messages: any[]) {
     const lastMessage = messages[messages.length - 1].content
@@ -29,5 +30,20 @@ export async function chatWithCommunity(communityId: string, messages: any[]) {
         ],
     })
 
-    return response.choices[0].message.content
+    const aiResponse = response.choices[0].message.content
+
+    // 3. Log Activity
+    await createActivity({
+        type: 'ai_log',
+        community_id: communityId,
+        contact_id: null, // Chat is global for now, could be per contact in mobile app later
+        title: 'Asistente IA respondió',
+        description: `La IA respondió sobre: "${lastMessage.substring(0, 50)}..."`,
+        metadata: {
+            context_docs_count: contextDocs?.length || 0,
+            full_response: aiResponse?.substring(0, 100) + '...'
+        }
+    })
+
+    return aiResponse
 }

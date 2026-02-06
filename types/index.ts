@@ -5,6 +5,13 @@ export interface Community {
     unit_count: number | null
     onedrive_folder_id: string | null
     contact_info: { email?: string; phone?: string } | null
+    bank_data?: {
+        bank_name?: string
+        account_type?: string
+        account_number?: string
+        rut?: string
+        email?: string
+    } | null
     created_at: string
     email_provider?: 'gmail' | 'smtp' | null
     smtp_host?: string | null
@@ -12,6 +19,17 @@ export interface Community {
     smtp_user?: string | null
     smtp_pass?: string | null
     gmail_access_token?: string | null
+}
+
+export interface Activity {
+    id: string
+    community_id: string
+    contact_id: string | null
+    type: 'email_in' | 'email_out' | 'task_created' | 'task_completed' | 'ai_log' | 'maintenance' | 'announcement' | 'global_event'
+    title: string
+    description: string | null
+    metadata: Record<string, any>
+    created_at: string
 }
 
 export interface CommunityDocument {

@@ -1,10 +1,14 @@
 import { getContact, getContactNotes } from '@/lib/actions/contacts'
 import { getCommunities } from '@/lib/actions/communities'
+import { getContactActivities } from '@/lib/actions/activities'
 import { ContactDetail } from '@/components/contacts/contact-detail'
+import { Storyline } from '@/components/activities/storyline'
+import { AddEventDialog } from '@/components/activities/add-event-dialog'
 import { notFound } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
 export const dynamic = 'force-dynamic'
 
@@ -14,9 +18,12 @@ interface PageProps {
 
 export default async function ContactDetailPage(props: PageProps) {
     const params = await props.params;
-    const contact = await getContact(params.id)
-    const notes = await getContactNotes(params.id)
-    const communities = await getCommunities() // Needed for dropdown
+    const [contact, notes, communities, activities] = await Promise.all([
+        getContact(params.id),
+        getContactNotes(params.id),
+        getCommunities(),
+        getContactActivities(params.id)
+    ])
 
     if (!contact) {
         notFound()
@@ -33,11 +40,25 @@ export default async function ContactDetailPage(props: PageProps) {
                 <h2 className="text-2xl font-bold tracking-tight">Detalles del Contacto</h2>
             </div>
 
-            <ContactDetail
-                contact={contact}
-                notes={notes}
-                communities={communities}
-            />
+            <Tabs defaultValue="info" className="space-y-4">
+                <TabsList>
+                    <TabsTrigger value="info">Perfil</TabsTrigger>
+                    <TabsTrigger value="storyline">Storyline</TabsTrigger>
+                </TabsList>
+                <TabsContent value="info">
+                    <ContactDetail
+                        contact={contact}
+                        notes={notes}
+                        communities={communities}
+                    />
+                </TabsContent>
+                <TabsContent value="storyline" className="space-y-4">
+                    <div className="flex justify-end">
+                        <AddEventDialog communityId={contact.community_id || ''} contactId={contact.id} />
+                    </div>
+                    <Storyline activities={activities} title="Historial del Contacto" />
+                </TabsContent>
+            </Tabs>
         </div>
     )
 }

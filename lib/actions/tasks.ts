@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { Task } from '@/types'
 import { revalidatePath } from 'next/cache'
+import { createActivity } from './activities'
 
 export async function getTasks(): Promise<Task[]> {
     const supabase = await createClient()
@@ -35,6 +36,20 @@ export async function updateTaskStatus(taskId: string, newStatus: Task['status']
 
     if (error) {
         return { error: error.message }
+    }
+
+    if (newStatus === 'done') {
+        const { data: task } = await supabase.from('tasks').select('title, community_id, contact_id').eq('id', taskId).single()
+        if (task && task.community_id) {
+            await createActivity({
+                type: 'task_completed',
+                community_id: task.community_id,
+                contact_id: task.contact_id,
+                title: 'Tarea Completada',
+                description: `Se completó la tarea: ${task.title}`,
+                metadata: { task_id: taskId }
+            })
+        }
     }
 
     revalidatePath('/dashboard/tasks')
@@ -74,6 +89,17 @@ export async function createTask(formData: FormData) {
 
     if (error) {
         return { error: error.message }
+    }
+
+    if (community_id) {
+        await createActivity({
+            type: 'task_created',
+            community_id: community_id as string,
+            contact_id: contact_id as string || null,
+            title: 'Tarea Creada',
+            description: `Nueva tarea: ${title}`,
+            metadata: { priority, due_date }
+        })
     }
 
     revalidatePath('/dashboard/tasks')

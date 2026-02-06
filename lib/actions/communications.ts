@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { createActivity } from './activities'
 
 export interface Email {
     id: string
@@ -148,7 +149,7 @@ export async function sendNewEmail(params: {
     // For now, we save it as a local record. syncMessages will likely pick it up later or duplicately, 
     // but it's better to show it immediately.
 
-    const { error: insertError } = await supabase.from('communications').insert({
+    const { error: insertError, data: sentEmail } = await supabase.from('communications').insert({
         community_id: params.communityId,
         subject: params.subject,
         body: params.body,
@@ -157,7 +158,18 @@ export async function sendNewEmail(params: {
         received_at: new Date().toISOString(),
         status: 'resolved',
         metadata: { type: 'outgoing', to: params.to, from_custom: params.fromEmail }
-    })
+    }).select().single()
+
+    if (!insertError && sentEmail) {
+        await createActivity({
+            type: 'email_out',
+            community_id: params.communityId,
+            contact_id: null, // We could try to find the contact by email but for now null or custom search
+            title: 'Email Enviado',
+            description: `Asunto: ${params.subject}`,
+            metadata: { communication_id: sentEmail.id, to: params.to }
+        })
+    }
 
     if (insertError) {
         console.error('Error saving sent email:', insertError)

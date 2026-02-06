@@ -1,8 +1,11 @@
 import { getCommunity } from '@/lib/actions/communities'
 import { getCommunityDocuments } from '@/lib/actions/documents'
+import { getCommunityActivities } from '@/lib/actions/activities'
 import { CommunityInfo } from '@/components/communities/community-info'
 import { CommunityDocuments } from '@/components/communities/community-documents'
 import { CommunityChat } from '@/components/communities/community-chat'
+import { Storyline } from '@/components/activities/storyline'
+import { AddEventDialog } from '@/components/activities/add-event-dialog'
 import { EmailSettingsForm } from '@/components/communities/email-settings-form'
 import { DeleteCommunityDialog } from '@/components/communities/delete-community-dialog'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -13,13 +16,15 @@ import { notFound } from 'next/navigation'
 
 export default async function CommunityDetailPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params
-    const community = await getCommunity(id)
+    const [community, documents, activities] = await Promise.all([
+        getCommunity(id),
+        getCommunityDocuments(id),
+        getCommunityActivities(id)
+    ])
 
     if (!community) {
         notFound()
     }
-
-    const documents = await getCommunityDocuments(id)
 
     return (
         <div className="container mx-auto py-6 space-y-6">
@@ -38,12 +43,19 @@ export default async function CommunityDetailPage({ params }: { params: Promise<
             <Tabs defaultValue="info" className="space-y-4">
                 <TabsList>
                     <TabsTrigger value="info">Información</TabsTrigger>
+                    <TabsTrigger value="storyline">Storyline</TabsTrigger>
                     <TabsTrigger value="documents">Base de Conocimiento</TabsTrigger>
                     <TabsTrigger value="chat">Chat con IA</TabsTrigger>
                     <TabsTrigger value="settings">Configuración</TabsTrigger>
                 </TabsList>
                 <TabsContent value="info">
                     <CommunityInfo community={community} />
+                </TabsContent>
+                <TabsContent value="storyline" className="space-y-4">
+                    <div className="flex justify-end">
+                        <AddEventDialog communityId={community.id} />
+                    </div>
+                    <Storyline activities={activities} title="Actividades de la Comunidad" />
                 </TabsContent>
                 <TabsContent value="documents">
                     <CommunityDocuments documents={documents} communityId={community.id} />
