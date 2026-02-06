@@ -1,18 +1,9 @@
 import { getCommunities } from '@/lib/actions/communities'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import dynamic from 'next/dynamic'
+import { CommunityMapClient } from '@/components/communities/community-map-client'
 import { Button } from '@/components/ui/button'
 import { Plus } from 'lucide-react'
 import Link from 'next/link'
-
-// Dynamic import for the map to avoid SSR errors with Leaflet
-const CommunityMap = dynamic(
-    () => import('@/components/communities/community-map').then((mod) => mod.CommunityMap),
-    {
-        ssr: false,
-        loading: () => <div className="h-[600px] w-full bg-muted animate-pulse rounded-lg flex items-center justify-center">Cargando biblioteca de mapas...</div>
-    }
-)
 
 export default async function MapaPage() {
     const communities = await getCommunities()
@@ -39,7 +30,7 @@ export default async function MapaPage() {
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <CommunityMap communities={communities} />
+                    <CommunityMapClient communities={communities} />
                 </CardContent>
             </Card>
         </div>
