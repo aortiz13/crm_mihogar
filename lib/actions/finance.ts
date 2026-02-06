@@ -177,3 +177,26 @@ export async function getResidentBill(email: string, month: number, year: number
     if (error) return { error: error.message }
     return { data: details }
 }
+
+/**
+ * Internal-only tool to lookup bill by unit number
+ */
+export async function getBillByUnit(communityId: string, unitNumber: string, month: number, year: number) {
+    const supabase = await createClient()
+
+    const { data: details, error } = await supabase
+        .from('finance_charge_details')
+        .select(`
+            concept_name,
+            amount,
+            units!inner(unit_number, community_id),
+            finance_periods!inner(month, year)
+        `)
+        .eq('units.unit_number', unitNumber)
+        .eq('units.community_id', communityId)
+        .eq('finance_periods.month', month)
+        .eq('finance_periods.year', year)
+
+    if (error) return { error: error.message }
+    return { data: details }
+}
