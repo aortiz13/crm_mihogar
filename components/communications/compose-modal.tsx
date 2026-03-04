@@ -132,20 +132,30 @@ export function ComposeEmailModal({ children, communities, contacts }: ComposeEm
                     <DialogTitle>Nuevo Mensaje</DialogTitle>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="grid gap-4 py-4">
-                    {/* FROM Field */}
+                    {/* FROM Field - Unified Microsoft mailbox */}
                     <div className="grid grid-cols-4 items-center gap-4">
                         <Label htmlFor="from" className="text-right">
                             De:
                         </Label>
                         <div className="col-span-3">
+                            <Input value="correos@mi-hogar.cl" disabled className="bg-muted" />
+                        </div>
+                    </div>
+
+                    {/* Community classification */}
+                    <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="community" className="text-right">
+                            Comunidad:
+                        </Label>
+                        <div className="col-span-3">
                             <Select value={selectedCommunityId} onValueChange={setSelectedCommunityId}>
                                 <SelectTrigger className="w-full">
-                                    <SelectValue placeholder="Seleccionar remitente" />
+                                    <SelectValue placeholder="Asociar a comunidad (opcional)" />
                                 </SelectTrigger>
                                 <SelectContent>
                                     {communities.map((community) => (
                                         <SelectItem key={community.id} value={community.id}>
-                                            {community.name} {community.contact_info?.email ? `<${community.contact_info.email}>` : ''}
+                                            {community.name}
                                         </SelectItem>
                                     ))}
                                 </SelectContent>

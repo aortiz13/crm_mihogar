@@ -2,6 +2,8 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { createActivity } from './activities'
+import { syncEmails as syncMicrosoftEmails, sendEmail as sendMicrosoftEmail } from '@/lib/services/microsoft-graph'
+import { revalidatePath } from 'next/cache'
 
 export interface Email {
     id: string
@@ -16,7 +18,11 @@ export interface Email {
     thread_id: string | null
     community_id: string | null
     metadata: any | null
-    type?: 'incoming' | 'outgoing' // Virtual or provided by metadata
+    type?: 'incoming' | 'outgoing'
+    direction?: 'incoming' | 'outgoing'
+    microsoft_message_id?: string | null
+    conversation_id?: string | null
+    ai_metadata?: any | null
 }
 
 export async function getEmails(filters?: { communityId?: string, folder?: string }) {
@@ -37,11 +43,10 @@ export async function getEmails(filters?: { communityId?: string, folder?: strin
             query = query.in('status', ['new', 'pending'])
         } else if (filters.folder === 'resolved') {
             query = query.eq('status', 'resolved')
+        } else if (filters.folder === 'unclassified') {
+            query = query.is('community_id', null)
         }
-        // 'trash' or others could be added if schema supports it
     } else {
-        // Default to pending/new if no folder specified? Or all?
-        // Matching previous logic: default was pending/new
         query = query.in('status', ['new', 'pending'])
     }
 
@@ -92,8 +97,8 @@ export async function getThreadMessages(threadId: string) {
     const { data, error } = await supabase
         .from('communications')
         .select('*')
-        .eq('thread_id', threadId)
-        .order('received_at', { ascending: true }) // Oldest first for thread history
+        .eq('conversation_id', threadId)
+        .order('received_at', { ascending: true })
 
     if (error) {
         console.error('Error fetching thread:', error)
@@ -103,71 +108,59 @@ export async function getThreadMessages(threadId: string) {
     return data as Email[]
 }
 
-import { syncEmailsForCommunity, sendEmail as sendGmail } from '@/lib/services/gmail'
-import { revalidatePath } from 'next/cache'
-
-export async function syncMessages(communityId: string) {
-    const res = await syncEmailsForCommunity(communityId)
+// Unified sync - no longer needs communityId
+export async function syncMessages() {
+    const res = await syncMicrosoftEmails()
     revalidatePath('/dashboard/communications')
     return res
 }
 
-export async function sendReply(communityId: string, to: string, subject: string, body: string) {
-    // Reuse the generic sending logic but maybe mark as resolved or keep consistent
-    return sendNewEmail({ communityId, to, subject, body })
+export async function sendReply(to: string, subject: string, body: string, communityId?: string) {
+    return sendNewEmail({ to, subject, body, communityId })
 }
 
 export async function sendNewEmail(params: {
-    communityId: string;
-    fromEmail?: string;
+    communityId?: string;
     to: string;
     subject: string;
     body: string;
-    attachmentContent?: string;
-    attachmentName?: string;
 }) {
     const supabase = await createClient()
 
-    // 1. Send via Gmail/SMTP service
-    try {
-        await sendGmail(params.communityId, {
-            to: params.to,
-            subject: params.subject,
-            body: params.body,
-            from: params.fromEmail // Pass custom from if provided
-        })
-    } catch (error) {
-        console.error('Error sending email via service:', error)
+    // 1. Send via Microsoft Graph API
+    const sendResult = await sendMicrosoftEmail({
+        to: params.to,
+        subject: params.subject,
+        body: params.body,
+        communityId: params.communityId,
+    })
+
+    if ('error' in sendResult) {
+        console.error('Error sending email via Microsoft:', sendResult.error)
         return { error: 'Failed to send email' }
     }
 
-    // 2. Save to Database
-    // We might not have a thread_id yet if it's a new email, or Gmail API response might give it.
-    // The sendGmail service currently returns { success: true } or error. 
-    // Ideally sendGmail should return the 'id' and 'threadId' of the sent message if possible, 
-    // but standard GMail send API returns them. `lib/services/gmail.ts` needs to return them.
-    // For now, we save it as a local record. syncMessages will likely pick it up later or duplicately, 
-    // but it's better to show it immediately.
-
+    // 2. Save to Database as outgoing record
     const { error: insertError, data: sentEmail } = await supabase.from('communications').insert({
-        community_id: params.communityId,
+        community_id: params.communityId || null,
         subject: params.subject,
         body: params.body,
-        sender_name: 'Yo (Enviado)',
-        sender_email: 'me',
+        sender_name: 'correos@mi-hogar.cl',
+        sender_email: 'correos@mi-hogar.cl',
         received_at: new Date().toISOString(),
         status: 'resolved',
-        metadata: { type: 'outgoing', to: params.to, from_custom: params.fromEmail }
+        direction: 'outgoing',
+        metadata: { type: 'outgoing', to: params.to },
     }).select().single()
 
     if (!insertError && sentEmail) {
         await createActivity({
             type: 'email_out',
-            community_id: params.communityId,
-            contact_id: null, // We could try to find the contact by email but for now null or custom search
+            community_id: params.communityId || '',
+            contact_id: null,
             title: 'Email Enviado',
-            description: `Asunto: ${params.subject}`,
-            metadata: { communication_id: sentEmail.id, to: params.to }
+            description: `Asunto: ${params.subject} | Para: ${params.to}`,
+            metadata: { communication_id: sentEmail.id, to: params.to },
         })
     }
 
@@ -177,4 +170,26 @@ export async function sendNewEmail(params: {
 
     revalidatePath('/dashboard/communications')
     return { success: true }
+}
+
+// Assign a community to an unclassified email
+export async function assignCommunity(emailId: string, communityId: string) {
+    const supabase = await createClient()
+
+    const { error } = await supabase
+        .from('communications')
+        .update({
+            community_id: communityId,
+            ai_metadata: {
+                method: 'manual_assignment',
+                confidence: 1.0,
+                reasoning: 'Manually assigned by user',
+            },
+        })
+        .eq('id', emailId)
+
+    if (!error) {
+        revalidatePath('/dashboard/communications')
+    }
+    return { error: error?.message }
 }

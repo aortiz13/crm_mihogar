@@ -1,17 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { syncEmailsForCommunity } from '@/lib/services/gmail'
+import { syncEmails } from '@/lib/services/microsoft-graph'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET(req: NextRequest) {
-    const communityId = '2972a3a6-75e0-43fa-b2b2-efb1b9c08529' // Hardcoded from Step 1143
-    console.log(`Debug Syncing for ${communityId}`)
+    console.log('[Debug] Syncing Microsoft unified mailbox...')
 
     try {
-        const result = await syncEmailsForCommunity(communityId)
+        const result = await syncEmails()
         return NextResponse.json({
             status: 'done',
-            communityId,
             result
         })
     } catch (error: any) {

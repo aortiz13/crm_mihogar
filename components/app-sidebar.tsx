@@ -109,9 +109,11 @@ export function AppSidebar({ isAdmin, communities = [] }: { isAdmin?: boolean; c
                         </SidebarMenuButton>
                     </SidebarMenuItem>
                     <SidebarMenuItem>
-                        <SidebarMenuButton className="text-muted-foreground">
-                            <Settings className="size-4" />
-                            <span>Configuración</span>
+                        <SidebarMenuButton asChild className="text-muted-foreground">
+                            <Link href="/dashboard/settings">
+                                <Settings className="size-4" />
+                                <span>Configuración</span>
+                            </Link>
                         </SidebarMenuButton>
                     </SidebarMenuItem>
                 </SidebarMenu>

@@ -1,22 +1,15 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Input } from '@/components/ui/input'
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable'
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select"
+
 import { TimelineView } from './timeline-view'
 import { CrmContextPanel } from './crm-context-panel'
 import { Email, sendNewEmail } from '@/lib/actions/communications'
-import { getAllIntegrations } from '@/lib/actions/integrations'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
@@ -33,26 +26,7 @@ interface SmartReplyDialogProps {
 export function SmartReplyDialog({ isOpen, onClose, email, threadMessages }: SmartReplyDialogProps) {
     const [replyBody, setReplyBody] = useState('')
     const [isSending, setIsSending] = useState(false)
-    const [integrations, setIntegrations] = useState<any[]>([])
-    const [selectedFrom, setSelectedFrom] = useState('')
-
-    useEffect(() => {
-        const fetchIntegrations = async () => {
-            const data = await getAllIntegrations()
-            setIntegrations(data)
-
-            // Try to find the best default "From"
-            const currentCommunityIntegration = data.find(i => i.community_id === email.community_id)
-            if (currentCommunityIntegration) {
-                setSelectedFrom(currentCommunityIntegration.email)
-            } else if (data.length > 0) {
-                setSelectedFrom(data[0].email)
-            } else {
-                setSelectedFrom('soporte@mihogar.com') // Fallback
-            }
-        }
-        fetchIntegrations()
-    }, [email.community_id])
+    const senderEmail = 'correos@mi-hogar.cl'
 
     // Combine current email with thread for the full picture if not already included
     // Assuming threadMessages includes history.
@@ -67,7 +41,6 @@ export function SmartReplyDialog({ isOpen, onClose, email, threadMessages }: Sma
         try {
             const res = await sendNewEmail({
                 communityId: email.community_id || '',
-                fromEmail: selectedFrom, // Pass the selected sender
                 to: email.sender_email,
                 subject: email.subject.startsWith('Re:') ? email.subject : `Re: ${email.subject}`,
                 body: replyBody
@@ -132,22 +105,7 @@ export function SmartReplyDialog({ isOpen, onClose, email, threadMessages }: Sma
 
                                                     <div className="flex items-center gap-4 text-sm h-9">
                                                         <span className="font-bold text-muted-foreground w-12 text-right">From</span>
-                                                        <Select value={selectedFrom} onValueChange={setSelectedFrom}>
-                                                            <SelectTrigger className="border-0 bg-transparent hover:bg-muted font-medium text-foreground/70 h-8 px-2 shadow-none focus:ring-0">
-                                                                <SelectValue placeholder="Seleccionar remitente" />
-                                                            </SelectTrigger>
-                                                            <SelectContent>
-                                                                {integrations.length > 0 ? (
-                                                                    integrations.map(integration => (
-                                                                        <SelectItem key={integration.email} value={integration.email}>
-                                                                            {integration.email}
-                                                                        </SelectItem>
-                                                                    ))
-                                                                ) : (
-                                                                    <SelectItem value="soporte@mihogar.com">soporte@mihogar.com</SelectItem>
-                                                                )}
-                                                            </SelectContent>
-                                                        </Select>
+                                                        <span className="font-medium text-foreground/70 px-2">{senderEmail}</span>
                                                     </div>
 
                                                     <div className="flex items-center gap-4 text-sm">

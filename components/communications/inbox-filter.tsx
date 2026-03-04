@@ -29,14 +29,8 @@ export function InboxFilter({ communities }: InboxFilterProps) {
         const params = new URLSearchParams(searchParams.toString())
         if (communityId) {
             params.set('communityId', communityId)
-            // Trigger Sync for the selected community
-            // We don't await this blocking navigation completely, but it provides better UX if we do partial wait
             try {
-                // await syncMessages(communityId) // disabling manual sync on filter change to rely on auto-refresh or bg sync to avoid delay
-                // Actually user might expect fresh data on filter change. Let's keep it but maybe non-blocking?
-                // The prompt asked for auto-refresh. Let's stick to that.
-                // Keeping syncMessages but knowing it adds delay.
-                await syncMessages(communityId)
+                await syncMessages()
             } catch (error) {
                 console.error("Sync failed", error)
             }

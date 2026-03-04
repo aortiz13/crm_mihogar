@@ -7,8 +7,8 @@ import { syncMessages } from '@/lib/actions/communications'
 import { getCommunities } from '@/lib/actions/communities'
 import { InboxFilter } from '@/components/communications/inbox-filter'
 
-import { startOfDay } from 'date-fns'; // Unused, removing if not needed or keeping existing imports clean
 import { getContacts } from '@/lib/actions/contacts'
+import { getSystemIntegration } from '@/lib/actions/integrations'
 
 type PageProps = {
     searchParams: Promise<{ id?: string, folder?: string, communityId?: string }>
@@ -33,22 +33,13 @@ export default async function CommunicationsPage(props: PageProps) {
 
     // const selectedDetails = searchParams.id ? await getEmail(searchParams.id) : null
 
-    const selectedThreadMessages = searchParams.id
-        ? await getThreadMessages((emails.find(e => e.id === searchParams.id)?.thread_id) || '')
-        : []
-
-    // Fallback if thread search failed or simple ID lookup
-    // Actually, getting the thread ID from the email list is safer if the email exists there.
-    // Ideally we would fetch the email first to get the thread ID, OR assumes ID is thread ID? 
-    // User clicks an Email ID. We need its thread ID.
-
     let threadData: any[] = []
     if (searchParams.id) {
         const targetEmail = emails.find(e => e.id === searchParams.id)
-        if (targetEmail && targetEmail.thread_id) {
-            threadData = await getThreadMessages(targetEmail.thread_id)
+        const threadKey = targetEmail?.conversation_id || targetEmail?.thread_id
+        if (targetEmail && threadKey) {
+            threadData = await getThreadMessages(threadKey)
         } else if (targetEmail) {
-            // Fallback for single message
             threadData = [targetEmail]
         }
     }
